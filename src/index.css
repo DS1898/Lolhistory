@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #c89b3c;
+  --color-primary-light: #f0e6d2;
+  --color-primary-dark: #785a28;
+  --color-bg-primary: #0a0a0f;
+  --color-bg-secondary: #13131a;
+  --color-bg-tertiary: #1a1a2e;
+  --color-bg-card: #16213e;
+  --color-bg-hover: #1e2a4a;
+  --color-blue-team: #2196f3;
+  --color-red-team: #f44336;
+  --color-win: #28a745;
+  --color-loss: #dc3545;
+  --color-text-primary: #f0e6d2;
+  --color-text-secondary: #a09b8c;
+  --color-text-muted: #5b5a56;
+  --color-border: #1e2328;
+  --color-border-light: #32281e;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-bg-tertiary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary-dark);
+}
