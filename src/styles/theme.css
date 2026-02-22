@@ -1,0 +1,275 @@
+/* ═══════════════════════════════════════════════════════
+   SOOP Tracker — Design System
+   DeepLol-inspired · Data-dense dark theme
+   Thin borders · Translucent panels · Chip labels
+═══════════════════════════════════════════════════════ */
+
+/* ─── Pretendard (Korean-optimized geometric sans) ─── */
+@import url("https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css");
+
+/* ─── Design Tokens ──────────────────────────────────── */
+:root {
+  /* Surface stack — each layer is 6–8% lighter */
+  --srf-base:   #0b0c12;
+  --srf-panel:  #11121a;
+  --srf-inset:  #0d0e16;
+  --srf-raised: #181924;
+  --srf-hover:  rgba(255, 255, 255, 0.035);
+  --srf-active: rgba(255, 255, 255, 0.06);
+
+  /* Borders — hairline only, never thick */
+  --bdr-faint:    rgba(255, 255, 255, 0.055);
+  --bdr-default:  rgba(255, 255, 255, 0.085);
+  --bdr-emphasis: rgba(255, 255, 255, 0.14);
+  --bdr-accent:   rgba(91, 155, 213, 0.28);
+
+  /* Win / Loss */
+  --clr-win:       #5b9bd5;
+  --clr-win-bg:    rgba(91, 155, 213, 0.08);
+  --clr-win-bdr:   rgba(91, 155, 213, 0.2);
+  --clr-loss:      #e84057;
+  --clr-loss-bg:   rgba(232, 64, 87, 0.08);
+  --clr-loss-bdr:  rgba(232, 64, 87, 0.2);
+
+  /* KDA quality tiers */
+  --clr-kda-good:    #c8963c;   /* gold    ≥ 2.5 */
+  --clr-kda-great:   #7ec8d8;   /* teal    ≥ 4.0 */
+  --clr-kda-perfect: #88d4a0;   /* mint    Perfect */
+
+  /* Accent */
+  --clr-accent:     #5b9bd5;
+  --clr-accent-dim: rgba(91, 155, 213, 0.11);
+
+  /* Text */
+  --txt-hi:  #e4e6f2;
+  --txt-mid: #858899;
+  --txt-lo:  #484a62;
+
+  /* Typography */
+  --font-ui: 'Pretendard Variable', 'Pretendard',
+             -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+
+  /* Border radii */
+  --r-xs: 3px;
+  --r-sm: 5px;
+  --r-md: 7px;
+  --r-lg: 11px;
+
+  /* Elevation */
+  --shadow-panel:    0 2px 10px rgba(0, 0, 0, 0.4),
+                     inset 0 1px 0 var(--bdr-faint);
+  --shadow-dropdown: 0 8px 28px rgba(0, 0, 0, 0.55),
+                     0 0 0 1px var(--bdr-default);
+}
+
+/* ─── Base override ──────────────────────────────────── */
+body {
+  font-family: var(--font-ui);
+}
+
+/* ─── Panel ──────────────────────────────────────────── */
+.st-panel {
+  background: var(--srf-panel);
+  border: 1px solid var(--bdr-default);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-panel);
+}
+
+.st-panel-inset {
+  background: var(--srf-inset);
+  border: 1px solid var(--bdr-faint);
+  border-radius: var(--r-md);
+}
+
+/* ─── Chip ───────────────────────────────────────────── */
+.st-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.15px;
+  line-height: 1.6;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.st-chip-win {
+  background: var(--clr-win-bg);
+  color: var(--clr-win);
+  border-color: var(--clr-win-bdr);
+}
+
+.st-chip-loss {
+  background: var(--clr-loss-bg);
+  color: var(--clr-loss);
+  border-color: var(--clr-loss-bdr);
+}
+
+.st-chip-neutral {
+  background: rgba(133, 136, 153, 0.08);
+  color: var(--txt-mid);
+  border-color: rgba(133, 136, 153, 0.14);
+}
+
+/* ─── Data Table ─────────────────────────────────────── */
+.st-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+
+.st-table thead th {
+  padding: 9px 14px;
+  text-align: left;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.55px;
+  text-transform: uppercase;
+  color: var(--txt-lo);
+  border-bottom: 1px solid var(--bdr-faint);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.st-table thead th.th-center,
+.st-table td.td-center {
+  text-align: center;
+}
+
+.st-table tbody tr {
+  transition: background 110ms;
+}
+
+.st-table tbody tr:hover {
+  background: var(--srf-hover);
+}
+
+/* trigger row when expanded — no bottom border, subtle tint */
+.st-table tr.is-expanded {
+  background: rgba(91, 155, 213, 0.04);
+}
+
+.st-table tr.is-expanded > td {
+  border-bottom: none;
+}
+
+.st-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--bdr-faint);
+  vertical-align: middle;
+  color: var(--txt-hi);
+}
+
+/* last row has no border */
+.st-table tbody tr:last-child:not(.expand-row) > td {
+  border-bottom: none;
+}
+
+/* expansion content row */
+.st-table tr.expand-row > td {
+  padding: 0;
+  border-bottom: 1px solid var(--bdr-default);
+}
+
+/* ─── Win Rate Bar ───────────────────────────────────── */
+.st-wr-track {
+  flex: 1;
+  height: 3px;
+  background: var(--srf-raised);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.st-wr-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 420ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ─── Expand Icon ────────────────────────────────────── */
+.st-expand-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--r-xs);
+  color: var(--txt-lo);
+  transition: transform 200ms ease, color 150ms;
+}
+
+.st-expand-icon.is-open {
+  transform: rotate(90deg);
+  color: var(--clr-accent);
+}
+
+/* ─── Opponent Card ──────────────────────────────────── */
+.st-opp-card {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 11px;
+  background: var(--srf-raised);
+  border: 1px solid var(--bdr-faint);
+  border-radius: var(--r-md);
+  min-width: 152px;
+  transition: border-color 120ms, background 120ms;
+}
+
+.st-opp-card:hover {
+  background: var(--srf-hover);
+  border-color: var(--bdr-default);
+}
+
+/* ─── Expand Content ─────────────────────────────────── */
+.st-expand-content {
+  background: var(--srf-inset);
+  border-top: 1px solid var(--bdr-faint);
+  padding: 13px 18px 16px;
+  animation: st-slide-in 170ms ease both;
+}
+
+.st-expand-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.55px;
+  text-transform: uppercase;
+  color: var(--txt-lo);
+  margin-bottom: 10px;
+}
+
+/* ─── Animations ─────────────────────────────────────── */
+@keyframes st-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .st-expand-content {
+    animation: none;
+  }
+
+  .st-expand-icon {
+    transition: none;
+  }
+
+  .st-wr-fill {
+    transition: none;
+  }
+}
+
+/* ─── Scrollbar ──────────────────────────────────────── */
+::-webkit-scrollbar        { width: 5px; height: 5px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: var(--bdr-emphasis); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--clr-accent); }

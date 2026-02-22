@@ -1,8 +1,10 @@
+import './styles/theme.css';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Layout from './components/layout/Layout';
 import HomePage from './pages/HomePage';
 import StreamersPage from './pages/StreamersPage';
 import StreamerPage from './pages/StreamerPage';
+import ChampionsPage from './pages/ChampionsPage';
 import AdminLoginPage from './pages/admin/AdminLoginPage';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -17,6 +19,7 @@ export default function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/streamers" element={<StreamersPage />} />
           <Route path="/streamer/:id" element={<StreamerPage />} />
+          <Route path="/champions" element={<ChampionsPage />} />
         </Route>
         <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route path="/admin" element={<AdminLayout />}>
