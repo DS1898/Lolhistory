@@ -31,12 +31,15 @@ export default function HomePage() {
   }
 
   return (
-    <div>
+    <div className="w-full">
       {/* 히어로 섹션 */}
-      <section className="py-20 px-4 bg-gradient-to-b from-bg-card to-bg-base">
+      <section
+        className="w-full py-20 px-4"
+        style={{ background: 'linear-gradient(to bottom, #15161e, #0d0e14)' }}
+      >
         <div className="max-w-2xl mx-auto text-center">
           <h1 className="text-5xl font-extrabold tracking-tight mb-3">
-            <span className="text-win">SOOP</span>
+            <span style={{ color: '#4489c8' }}>SOOP</span>
             <span className="text-text-primary"> Tracker</span>
           </h1>
           <p className="text-text-secondary text-base mb-10">
@@ -63,7 +66,7 @@ export default function HomePage() {
       </section>
 
       {/* 스트리머 목록 */}
-      <section className="max-w-6xl mx-auto px-4 py-12">
+      <section className="w-full max-w-6xl mx-auto px-4 py-12">
         <h2 className="text-lg font-semibold text-text-primary mb-6">
           전체 스트리머
           <span className="ml-2 text-sm font-normal text-text-secondary">
@@ -74,9 +77,10 @@ export default function HomePage() {
         {loading ? (
           <LoadingSpinner />
         ) : streamers.length === 0 ? (
-          <p className="text-text-muted text-center py-20">
-            등록된 스트리머가 없습니다.
-          </p>
+          <div className="text-center py-20">
+            <p className="text-text-muted mb-2">등록된 스트리머가 없습니다.</p>
+            <p className="text-text-muted text-sm">관리자가 스트리머를 추가하면 여기에 표시됩니다.</p>
+          </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
             {streamers.map((s) => (
@@ -85,7 +89,6 @@ export default function HomePage() {
                 to={`/streamer/${s.id}`}
                 className="bg-bg-card border border-border rounded-xl p-4 flex flex-col items-center gap-2 hover:border-accent hover:bg-bg-hover transition-all group"
               >
-                {/* 프로필 이미지 */}
                 <div className="w-16 h-16 rounded-full bg-bg-input border border-border overflow-hidden">
                   {s.profile_image_url ? (
                     <img
@@ -99,7 +102,7 @@ export default function HomePage() {
                     </div>
                   )}
                 </div>
-                <span className="text-sm font-medium text-text-primary group-hover:text-win transition-colors text-center truncate w-full text-center">
+                <span className="text-sm font-medium text-text-primary group-hover:text-win transition-colors text-center truncate w-full">
                   {s.name}
                 </span>
               </Link>
