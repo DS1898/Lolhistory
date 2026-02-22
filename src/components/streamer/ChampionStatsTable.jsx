@@ -3,14 +3,21 @@ import ChampionIcon from '../common/ChampionIcon';
 function WinRateBar({ rate }) {
   return (
     <div className="flex items-center gap-2">
-      <div className="flex-1 h-1.5 bg-bg-hover rounded-full overflow-hidden">
+      <div
+        role="progressbar"
+        aria-valuenow={Math.round(rate)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={`승률 ${Math.round(rate)}%`}
+        className="flex-1 h-1.5 bg-bg-hover rounded-full overflow-hidden"
+      >
         <div
           className={`h-full rounded-full ${rate >= 60 ? 'bg-win' : rate <= 40 ? 'bg-loss' : 'bg-text-secondary'}`}
           style={{ width: `${rate}%` }}
         />
       </div>
       <span
-        className={`text-xs font-semibold w-10 text-right ${
+        className={`text-xs font-semibold w-10 text-right tabular-nums ${
           rate >= 60 ? 'text-win' : rate <= 40 ? 'text-loss' : 'text-text-secondary'
         }`}
       >
@@ -78,16 +85,16 @@ export default function ChampionStatsTable({ participations }) {
                   <span className="font-medium text-text-primary">{row.champion_id}</span>
                 </div>
               </td>
-              <td className="text-center text-text-secondary">{row.games}</td>
+              <td className="text-center text-text-secondary tabular-nums">{row.games}</td>
               <td className="py-3 px-2">
                 <WinRateBar rate={row.winRate} />
               </td>
-              <td className="text-center text-xs hidden sm:table-cell">
+              <td className="text-center text-xs hidden sm:table-cell tabular-nums">
                 <span className="text-win">{row.wins}승</span>
                 <span className="text-text-muted mx-1">/</span>
                 <span className="text-loss">{row.losses}패</span>
               </td>
-              <td className={`text-center font-semibold ${row.avgKda === 'Perfect' ? 'text-win' : 'text-text-primary'}`}>
+              <td className={`text-center font-semibold tabular-nums ${row.avgKda === 'Perfect' ? 'text-win' : 'text-text-primary'}`}>
                 {row.avgKda}
               </td>
             </tr>

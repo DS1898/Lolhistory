@@ -1,6 +1,6 @@
 import { getChampionIconUrl } from '../../lib/ddragon';
 
-export default function ChampionIcon({ championId, size = 32, className = '', rounded = 'rounded-md' }) {
+export default function ChampionIcon({ championId, size = 32, className = '', rounded = 'rounded-md', priority = false }) {
   if (!championId) {
     return (
       <div
@@ -19,7 +19,8 @@ export default function ChampionIcon({ championId, size = 32, className = '', ro
       width={size}
       height={size}
       className={`object-cover ${rounded} ${className}`}
-      loading="lazy"
+      loading={priority ? undefined : 'lazy'}
+      fetchPriority={priority ? 'high' : undefined}
       onError={(e) => { e.currentTarget.style.opacity = '0.3'; }}
     />
   );

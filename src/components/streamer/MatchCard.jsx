@@ -13,14 +13,15 @@ function kda(kills, deaths, assists) {
   return ((kills + assists) / deaths).toFixed(2);
 }
 
+const rtf = new Intl.RelativeTimeFormat('ko', { numeric: 'auto' });
+
 function relativeDate(dateStr) {
   const diff = Date.now() - new Date(dateStr).getTime();
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  if (days === 0) return '오늘';
-  if (days === 1) return '1일 전';
-  if (days < 7) return `${days}일 전`;
-  if (days < 30) return `${Math.floor(days / 7)}주 전`;
-  return `${Math.floor(days / 30)}개월 전`;
+  if (days === 0) return rtf.format(0, 'day');
+  if (days < 7) return rtf.format(-days, 'day');
+  if (days < 30) return rtf.format(-Math.floor(days / 7), 'week');
+  return rtf.format(-Math.floor(days / 30), 'month');
 }
 
 export default function MatchCard({ participation, allParticipants, streamerId }) {
@@ -40,7 +41,7 @@ export default function MatchCard({ participation, allParticipants, streamerId }
 
   return (
     <div
-      className={`flex items-stretch rounded-lg overflow-hidden border transition-all hover:brightness-105 ${
+      className={`flex items-stretch rounded-lg overflow-hidden border transition-[filter] hover:brightness-105 ${
         isWin
           ? 'border-win/30 bg-win-muted'
           : 'border-loss/30 bg-loss-muted'
@@ -61,7 +62,7 @@ export default function MatchCard({ participation, allParticipants, streamerId }
 
         {/* 챔피언 아이콘 */}
         <div className="shrink-0">
-          <ChampionIcon championId={participation.champion_id} size={48} rounded="rounded-lg" />
+          <ChampionIcon championId={participation.champion_id} size={48} rounded="rounded-lg" priority />
           {participation.position && (
             <div className="text-xs text-text-muted text-center mt-1">
               {POSITION_KO[participation.position] || participation.position}

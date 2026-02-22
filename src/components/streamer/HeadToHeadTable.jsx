@@ -20,7 +20,7 @@ function WinRateCircle({ winRate, size = 44 }) {
         transform="rotate(-90 22 22)"
       />
       <text x="22" y="26" textAnchor="middle" fontSize="9" fill="#e8e8ea" fontWeight="700">
-        {winRate.toFixed(0)}%
+        {new Intl.NumberFormat('ko', { style: 'percent', maximumFractionDigits: 0 }).format(winRate / 100)}
       </text>
     </svg>
   );
@@ -90,7 +90,7 @@ export default function HeadToHeadTable({ participations, allParticipants, strea
                 <Link to={`/streamer/${row.id}`} className="flex items-center gap-3 group">
                   <div className="w-9 h-9 rounded-full bg-bg-input border border-border overflow-hidden shrink-0">
                     {row.profileImageUrl ? (
-                      <img src={row.profileImageUrl} alt={row.name} className="w-full h-full object-cover" />
+                      <img src={row.profileImageUrl} alt={row.name} width={36} height={36} loading="lazy" className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-text-muted font-bold text-sm">
                         {row.name.charAt(0)}
