@@ -1,46 +1,49 @@
-import { Link, NavLink } from 'react-router-dom';
-import SearchBar from '../common/SearchBar';
-
-const navLinks = [
-  { to: '/', label: '홈' },
-  { to: '/search', label: '전적 검색' },
-  { to: '/team-builder', label: '팀 빌더' },
-  { to: '/champions', label: '챔피언' },
-];
+import { Link, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 
 export default function Navbar() {
+  const [query, setQuery] = useState('');
+  const navigate = useNavigate();
+
+  function handleSearch(e) {
+    e.preventDefault();
+    const q = query.trim();
+    navigate(q ? `/streamers?q=${encodeURIComponent(q)}` : '/streamers');
+    setQuery('');
+  }
+
   return (
-    <nav className="bg-bg-secondary border-b border-border sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center gap-8">
-            <Link to="/" className="flex items-center gap-2">
-              <span className="text-primary font-bold text-xl">LoL</span>
-              <span className="text-text-primary font-semibold">Team Builder</span>
-            </Link>
-            <div className="hidden md:flex items-center gap-1">
-              {navLinks.map(({ to, label }) => (
-                <NavLink
-                  key={to}
-                  to={to}
-                  end={to === '/'}
-                  className={({ isActive }) =>
-                    `px-3 py-2 rounded-lg text-sm transition-colors ${
-                      isActive
-                        ? 'bg-bg-tertiary text-primary'
-                        : 'text-text-secondary hover:text-text-primary hover:bg-bg-tertiary'
-                    }`
-                  }
-                >
-                  {label}
-                </NavLink>
-              ))}
-            </div>
-          </div>
-          <div className="hidden lg:block w-96">
-            <SearchBar size="sm" />
-          </div>
+    <nav className="sticky top-0 z-50 bg-bg-card border-b border-border">
+      <div className="max-w-7xl mx-auto px-4 h-14 flex items-center gap-6">
+        {/* 로고 */}
+        <Link to="/" className="flex items-center gap-1 shrink-0">
+          <span className="text-lg font-extrabold text-win">SOOP</span>
+          <span className="text-lg font-extrabold text-text-primary">Tracker</span>
+        </Link>
+
+        {/* 네비 */}
+        <div className="hidden md:flex items-center gap-5 text-sm">
+          <Link to="/streamers" className="text-text-secondary hover:text-text-primary transition-colors">
+            스트리머
+          </Link>
         </div>
+
+        {/* 검색 (오른쪽 정렬) */}
+        <form onSubmit={handleSearch} className="ml-auto flex">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="스트리머 검색..."
+            className="bg-bg-input text-text-primary border border-border rounded-l-lg px-4 py-2 text-sm w-52 focus:outline-none focus:border-accent placeholder:text-text-muted"
+          />
+          <button
+            type="submit"
+            className="bg-accent hover:bg-accent-hover text-white px-4 py-2 text-sm rounded-r-lg transition-colors font-medium"
+          >
+            검색
+          </button>
+        </form>
       </div>
     </nav>
   );

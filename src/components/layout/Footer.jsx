@@ -1,12 +1,10 @@
 export default function Footer() {
   return (
-    <footer className="bg-bg-secondary border-t border-border mt-auto py-6">
-      <div className="max-w-7xl mx-auto px-4 text-center">
-        <p className="text-text-muted text-sm">
-          LoL Team Builder는 Riot Games의 공식 서비스가 아닙니다.
-        </p>
-        <p className="text-text-muted text-xs mt-1">
-          Game content and materials are trademarks and copyrights of Riot Games.
+    <footer className="border-t border-border mt-auto py-8">
+      <div className="max-w-7xl mx-auto px-4 text-center text-text-muted text-sm">
+        <p>SOOP Tracker — 방송인 팀게임 전적 통계</p>
+        <p className="mt-1 text-xs">
+          이 사이트는 Riot Games의 공식 서비스가 아닙니다. League of Legends는 Riot Games의 상표입니다.
         </p>
       </div>
     </footer>

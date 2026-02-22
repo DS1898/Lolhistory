@@ -1,13 +1,10 @@
-import { getChampionIconUrl } from '../../utils/championUtils';
-import { useChampions } from '../../context/ChampionDataContext';
+import { getChampionIconUrl } from '../../lib/ddragon';
 
-export default function ChampionIcon({ championId, championName, size = 32, className = '' }) {
-  const { version } = useChampions();
-
+export default function ChampionIcon({ championId, size = 32, className = '', rounded = 'rounded-md' }) {
   if (!championId) {
     return (
       <div
-        className={`bg-bg-tertiary rounded-lg border border-border flex items-center justify-center text-text-muted ${className}`}
+        className={`bg-bg-input border border-border flex items-center justify-center text-text-muted text-xs ${rounded} ${className}`}
         style={{ width: size, height: size }}
       >
         ?
@@ -17,12 +14,13 @@ export default function ChampionIcon({ championId, championName, size = 32, clas
 
   return (
     <img
-      src={getChampionIconUrl(championId, version)}
-      alt={championName || championId}
+      src={getChampionIconUrl(championId)}
+      alt={championId}
       width={size}
       height={size}
-      className={`rounded-lg ${className}`}
+      className={`object-cover ${rounded} ${className}`}
       loading="lazy"
+      onError={(e) => { e.currentTarget.style.opacity = '0.3'; }}
     />
   );
 }
