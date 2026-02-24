@@ -5,15 +5,9 @@ import { supabase } from '../../lib/supabase';
 export default function AdminDashboard() {
   const [stats, setStats] = useState({ streamers: 0, matches: 0 });
   const [recentMatches, setRecentMatches] = useState([]);
-  const [editingMatch, setEditingMatch] = useState(null);
-  const [editDate, setEditDate] = useState('');
-  const [editSeason, setEditSeason] = useState('');
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchStats();
-    fetchRecentMatches();
-  }, []);
+  useEffect(() => { fetchStats(); fetchRecentMatches(); }, []);
 
   async function fetchStats() {
     const [{ count: sc }, { count: mc }] = await Promise.all([
@@ -24,12 +18,28 @@ export default function AdminDashboard() {
   }
 
   async function fetchRecentMatches() {
-    const { data } = await supabase
+    const { data: matches } = await supabase
       .from('matches')
       .select('id, played_at, season')
       .order('played_at', { ascending: false })
       .limit(10);
-    setRecentMatches(data || []);
+
+    if (!matches || matches.length === 0) { setRecentMatches([]); return; }
+
+    // 각 경기의 승리팀 파악
+    const matchIds = matches.map((m) => m.id);
+    const { data: parts } = await supabase
+      .from('match_participants')
+      .select('match_id, team, result')
+      .in('match_id', matchIds)
+      .eq('result', 'WIN');
+
+    const winTeamMap = {};
+    for (const p of (parts || [])) {
+      if (!winTeamMap[p.match_id]) winTeamMap[p.match_id] = p.team;
+    }
+
+    setRecentMatches(matches.map((m) => ({ ...m, winTeam: winTeamMap[m.id] || null })));
   }
 
   async function deleteMatch(matchId) {
@@ -39,43 +49,28 @@ export default function AdminDashboard() {
     setStats((prev) => ({ ...prev, matches: prev.matches - 1 }));
   }
 
-  function startEdit(match) {
-    setEditingMatch(match.id);
-    setEditDate(match.played_at);
-    setEditSeason(String(match.season));
-  }
-
-  async function saveEdit(matchId) {
-    await supabase.from('matches').update({ played_at: editDate, season: Number(editSeason) }).eq('id', matchId);
-    setRecentMatches((prev) =>
-      prev.map((m) => m.id === matchId ? { ...m, played_at: editDate, season: Number(editSeason) } : m)
-    );
-    setEditingMatch(null);
-  }
-
   async function copyMatch(matchId) {
-    // 해당 경기의 참여자 데이터 가져오기
     const { data: participants } = await supabase
       .from('match_participants')
       .select('streamer_id, team, champion_id, position, kills, deaths, assists, result')
       .eq('match_id', matchId);
 
-    // 새 경기 생성 (오늘 날짜)
     const today = new Date().toISOString().slice(0, 10);
     const original = recentMatches.find((m) => m.id === matchId);
     const { data: newMatch } = await supabase
       .from('matches')
       .insert({ played_at: today, season: original.season })
-      .select('id')
-      .single();
+      .select('id').single();
 
-    if (newMatch && participants) {
+    if (newMatch && participants?.length > 0) {
       await supabase.from('match_participants').insert(
         participants.map((p) => ({ ...p, match_id: newMatch.id }))
       );
     }
     fetchRecentMatches();
     fetchStats();
+    // 복사 후 바로 수정 페이지로 이동
+    navigate(`/admin/match/edit/${newMatch.id}`);
   }
 
   return (
@@ -117,46 +112,38 @@ export default function AdminDashboard() {
               <tr className="text-text-muted text-xs border-b border-border">
                 <th className="text-left px-5 py-3 font-medium">날짜</th>
                 <th className="text-left px-5 py-3 font-medium">시즌</th>
+                <th className="text-center px-5 py-3 font-medium">승리</th>
                 <th className="px-5 py-3 text-right font-medium">액션</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {recentMatches.map((m) => (
                 <tr key={m.id} className="hover:bg-bg-hover transition-colors">
-                  <td className="px-5 py-3 text-text-primary">
-                    {editingMatch === m.id ? (
-                      <input
-                        type="date"
-                        value={editDate}
-                        onChange={(e) => setEditDate(e.target.value)}
-                        className="bg-bg-input border border-border rounded px-2 py-1 text-sm text-text-primary focus:outline-none focus:border-accent"
-                      />
-                    ) : m.played_at}
-                  </td>
-                  <td className="px-5 py-3 text-text-secondary">
-                    {editingMatch === m.id ? (
-                      <input
-                        type="number"
-                        value={editSeason}
-                        onChange={(e) => setEditSeason(e.target.value)}
-                        className="bg-bg-input border border-border rounded px-2 py-1 text-sm text-text-primary focus:outline-none focus:border-accent w-20"
-                      />
-                    ) : `${m.season}시즌`}
+                  <td className="px-5 py-3 text-text-primary">{m.played_at}</td>
+                  <td className="px-5 py-3 text-text-secondary">{m.season}시즌</td>
+                  <td className="px-5 py-3 text-center">
+                    {m.winTeam ? (
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${m.winTeam === 1 ? 'bg-win/20 text-win' : 'bg-loss/20 text-loss'}`}>
+                        {m.winTeam}팀 승리
+                      </span>
+                    ) : (
+                      <span className="text-text-muted text-xs">-</span>
+                    )}
                   </td>
                   <td className="px-5 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      {editingMatch === m.id ? (
-                        <>
-                          <button onClick={() => saveEdit(m.id)} className="text-xs text-win hover:text-win/80 transition-colors px-2 py-1 rounded hover:bg-win/10">저장</button>
-                          <button onClick={() => setEditingMatch(null)} className="text-xs text-text-muted hover:text-text-primary transition-colors px-2 py-1 rounded hover:bg-bg-input">취소</button>
-                        </>
-                      ) : (
-                        <>
-                          <button onClick={() => startEdit(m)} className="text-xs text-text-secondary hover:text-text-primary transition-colors px-2 py-1 rounded hover:bg-bg-input">수정</button>
-                          <button onClick={() => copyMatch(m.id)} className="text-xs text-accent hover:text-accent-hover transition-colors px-2 py-1 rounded hover:bg-accent/10">복사</button>
-                          <button onClick={() => deleteMatch(m.id)} className="text-xs text-text-muted hover:text-loss transition-colors px-2 py-1 rounded hover:bg-loss/10">삭제</button>
-                        </>
-                      )}
+                      <Link to={`/admin/match/edit/${m.id}`}
+                        className="text-xs text-text-secondary hover:text-text-primary transition-colors px-2 py-1 rounded hover:bg-bg-input">
+                        수정
+                      </Link>
+                      <button onClick={() => copyMatch(m.id)}
+                        className="text-xs text-accent hover:text-accent-hover transition-colors px-2 py-1 rounded hover:bg-accent/10">
+                        복사
+                      </button>
+                      <button onClick={() => deleteMatch(m.id)}
+                        className="text-xs text-text-muted hover:text-loss transition-colors px-2 py-1 rounded hover:bg-loss/10">
+                        삭제
+                      </button>
                     </div>
                   </td>
                 </tr>

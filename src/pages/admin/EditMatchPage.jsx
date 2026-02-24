@@ -1,18 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { fetchChampions, getChampionIconUrl } from '../../lib/ddragon';
 import ChampionIcon from '../../components/common/ChampionIcon';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 const POSITIONS = ['TOP', 'JUNGLE', 'MID', 'ADC', 'SUPPORT'];
 const POSITION_KO = { TOP: '탑', JUNGLE: '정글', MID: '미드', ADC: '원딜', SUPPORT: '서폿' };
 const CURRENT_YEAR = new Date().getFullYear();
 
-function emptyPlayer(idx) {
-  return { streamerId: '', streamerName: '', championId: '', position: POSITIONS[idx], kills: '', deaths: '', assists: '' };
-}
-
-/* 챔피언 선택 모달 */
 function ChampionPickerModal({ champions, onSelect, onClose }) {
   const [search, setSearch] = useState('');
   const inputRef = useRef(null);
@@ -27,14 +23,14 @@ function ChampionPickerModal({ champions, onSelect, onClose }) {
           <input ref={inputRef} type="text" value={search} onChange={(e) => setSearch(e.target.value)}
             placeholder="챔피언 검색..."
             className="flex-1 bg-bg-input border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent placeholder:text-text-muted" />
-          <button onClick={onClose} className="text-text-muted hover:text-text-primary text-lg leading-none">✕</button>
+          <button onClick={onClose} className="text-text-muted hover:text-text-primary text-lg">✕</button>
         </div>
         <div className="overflow-y-auto p-3 grid grid-cols-6 sm:grid-cols-8 gap-2">
           {filtered.map((c) => (
             <button key={c.id} onClick={() => { onSelect(c.id); onClose(); }}
               className="flex flex-col items-center gap-1 p-1 rounded-lg hover:bg-bg-hover transition-colors group" title={c.name}>
               <img src={getChampionIconUrl(c.id)} alt={c.name} width={44} height={44} className="rounded-md" loading="lazy" />
-              <span className="text-[10px] text-text-muted group-hover:text-text-primary text-center leading-tight truncate w-full">{c.name}</span>
+              <span className="text-[10px] text-text-muted group-hover:text-text-primary text-center truncate w-full">{c.name}</span>
             </button>
           ))}
         </div>
@@ -43,7 +39,6 @@ function ChampionPickerModal({ champions, onSelect, onClose }) {
   );
 }
 
-/* 스트리머 자동완성 */
 function StreamerInput({ value, streamerName, onChange, streamers }) {
   const [input, setInput] = useState(streamerName || '');
   const [suggestions, setSuggestions] = useState([]);
@@ -78,7 +73,7 @@ function StreamerInput({ value, streamerName, onChange, streamers }) {
         placeholder="스트리머 검색..."
         className="w-full bg-bg-input border border-border rounded-lg px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:border-accent placeholder:text-text-muted" />
       {show && suggestions.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-0.5 bg-bg-card border border-border rounded-lg overflow-hidden shadow-xl z-40 max-h-48 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-0.5 bg-bg-card border border-border rounded-lg overflow-hidden shadow-xl z-40 max-h-40 overflow-y-auto">
           {suggestions.map((s) => (
             <button key={s.id} onClick={() => select(s)}
               className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-bg-hover transition-colors">
@@ -96,28 +91,17 @@ function StreamerInput({ value, streamerName, onChange, streamers }) {
   );
 }
 
-/* 포지션 고정 플레이어 행 */
 function PlayerRow({ idx, player, onChange, streamers, champions, onOpenChampionPicker }) {
-  const pos = POSITIONS[idx]; // 포지션 고정: 0=TOP, 1=JUNGLE, 2=MID, 3=ADC, 4=SUPPORT
-
+  const pos = POSITIONS[idx];
   return (
     <div className="grid grid-cols-6 gap-2 items-center py-2 border-b border-border last:border-0">
-      {/* 포지션 고정 배지 */}
-      <div className="text-center">
-        <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ background: '#1e2030', color: '#8b8b9e', border: '1px solid #2a2b3d' }}>
+      <span className="text-center">
+        <span className="text-xs font-semibold px-2 py-0.5 rounded" style={{ background: '#2a2b3d', color: '#8b8b9e' }}>
           {POSITION_KO[pos]}
         </span>
-      </div>
-
-      {/* 스트리머 자동완성 */}
-      <StreamerInput
-        value={player.streamerId}
-        streamerName={player.streamerName}
-        streamers={streamers}
-        onChange={(id, name) => { onChange('streamerId', id); onChange('streamerName', name); }}
-      />
-
-      {/* 챔피언 선택 */}
+      </span>
+      <StreamerInput value={player.streamerId} streamerName={player.streamerName} streamers={streamers}
+        onChange={(id, name) => { onChange('streamerId', id); onChange('streamerName', name); }} />
       <button type="button" onClick={() => onOpenChampionPicker()}
         className="flex items-center gap-2 bg-bg-input border border-border rounded-lg px-2 py-1.5 hover:border-accent transition-colors">
         {player.championId ? (
@@ -125,8 +109,6 @@ function PlayerRow({ idx, player, onChange, streamers, champions, onOpenChampion
             <span className="text-xs text-text-primary truncate">{player.championId}</span></>
         ) : <span className="text-xs text-text-muted">챔피언</span>}
       </button>
-
-      {/* KDA */}
       <div className="flex gap-1 items-center col-span-3">
         {['kills', 'deaths', 'assists'].map((field, fi) => (
           <input key={field} type="number" min="0" value={player[field]}
@@ -139,40 +121,90 @@ function PlayerRow({ idx, player, onChange, streamers, champions, onOpenChampion
   );
 }
 
-export default function AddMatchPage() {
+export default function EditMatchPage() {
+  const { matchId } = useParams();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
   const [streamers, setStreamers] = useState([]);
   const [champions, setChampions] = useState([]);
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState('');
   const [season, setSeason] = useState(CURRENT_YEAR);
   const [winningTeam, setWinningTeam] = useState(1);
-  const [team1, setTeam1] = useState(Array.from({ length: 5 }, (_, i) => emptyPlayer(i)));
-  const [team2, setTeam2] = useState(Array.from({ length: 5 }, (_, i) => emptyPlayer(i)));
+  const [team1, setTeam1] = useState([]);
+  const [team2, setTeam2] = useState([]);
   const [pickerTarget, setPickerTarget] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    supabase.from('streamers').select('id, name, profile_image_url').order('name').then(({ data }) => setStreamers(data || []));
-    fetchChampions().then(setChampions);
-  }, []);
+    Promise.all([
+      supabase.from('streamers').select('id, name, profile_image_url').order('name'),
+      fetchChampions(),
+    ]).then(([{ data: sData }, champs]) => {
+      setStreamers(sData || []);
+      setChampions(champs);
+    });
+    loadMatch();
+  }, [matchId]);
+
+  async function loadMatch() {
+    setLoading(true);
+    const { data: match } = await supabase.from('matches').select('*').eq('id', matchId).single();
+    if (!match) { navigate('/admin'); return; }
+    setDate(match.played_at);
+    setSeason(match.season);
+
+    const { data: parts } = await supabase
+      .from('match_participants')
+      .select('*, streamer:streamers(id, name, profile_image_url)')
+      .eq('match_id', matchId);
+
+    // 팀1/팀2 분리 후 5자리로 패딩
+    const makeTeam = (teamNum) => {
+      const teamParts = (parts || []).filter((p) => p.team === teamNum);
+      // 포지션 순서로 정렬
+      const sorted = POSITIONS.map((pos) => teamParts.find((p) => p.position === pos) || null);
+      return sorted.map((p, i) => p ? {
+        participantId: p.id,
+        streamerId: p.streamer_id,
+        streamerName: p.streamer?.name || '',
+        championId: p.champion_id || '',
+        position: POSITIONS[i],
+        kills: String(p.kills || 0),
+        deaths: String(p.deaths || 0),
+        assists: String(p.assists || 0),
+        result: p.result,
+      } : {
+        participantId: null,
+        streamerId: '', streamerName: '', championId: '',
+        position: POSITIONS[i], kills: '', deaths: '', assists: '', result: '',
+      });
+    };
+
+    // 승리팀 파악
+    const winTeam = (parts || []).find((p) => p.result === 'WIN');
+    if (winTeam) setWinningTeam(winTeam.team);
+
+    setTeam1(makeTeam(1));
+    setTeam2(makeTeam(2));
+    setLoading(false);
+  }
 
   function updatePlayer(teamNum, idx, field, value) {
     const setter = teamNum === 1 ? setTeam1 : setTeam2;
     setter((prev) => prev.map((p, i) => i === idx ? { ...p, [field]: value } : p));
   }
 
-  async function handleSubmit(e) {
+  async function handleSave(e) {
     e.preventDefault();
     setError('');
-    const t1Valid = team1.some((p) => p.streamerId);
-    const t2Valid = team2.some((p) => p.streamerId);
-    if (!t1Valid || !t2Valid) { setError('각 팀에 최소 1명 이상의 스트리머를 선택해주세요.'); return; }
     setSaving(true);
 
-    const { data: matchData, error: matchErr } = await supabase
-      .from('matches').insert({ played_at: date, season }).select('id').single();
-    if (matchErr) { setError('경기 저장 중 오류: ' + matchErr.message); setSaving(false); return; }
+    // 경기 기본 정보 수정
+    await supabase.from('matches').update({ played_at: date, season }).eq('id', matchId);
+
+    // 기존 참여자 전체 삭제 후 재입력
+    await supabase.from('match_participants').delete().eq('match_id', matchId);
 
     const participants = [];
     for (const [teamPlayers, teamNum] of [[team1, 1], [team2, 2]]) {
@@ -180,9 +212,11 @@ export default function AddMatchPage() {
         const p = teamPlayers[i];
         if (!p.streamerId) continue;
         participants.push({
-          match_id: matchData.id, streamer_id: p.streamerId, team: teamNum,
+          match_id: matchId,
+          streamer_id: p.streamerId,
+          team: teamNum,
           champion_id: p.championId || null,
-          position: POSITIONS[i], // 포지션 고정
+          position: POSITIONS[i],
           kills: parseInt(p.kills) || 0,
           deaths: parseInt(p.deaths) || 0,
           assists: parseInt(p.assists) || 0,
@@ -192,15 +226,20 @@ export default function AddMatchPage() {
     }
 
     const { error: partErr } = await supabase.from('match_participants').insert(participants);
-    if (partErr) { setError('참여자 저장 중 오류: ' + partErr.message); setSaving(false); return; }
+    if (partErr) { setError('저장 중 오류: ' + partErr.message); setSaving(false); return; }
     navigate('/admin');
   }
 
+  if (loading) return <LoadingSpinner />;
+
   return (
     <div className="max-w-3xl">
-      <h1 className="text-xl font-bold text-text-primary mb-8">경기 추가</h1>
+      <div className="flex items-center gap-3 mb-8">
+        <button onClick={() => navigate('/admin')} className="text-text-muted hover:text-text-primary transition-colors text-sm">← 대시보드</button>
+        <h1 className="text-xl font-bold text-text-primary">경기 수정</h1>
+      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSave} className="space-y-6">
         {/* 기본 정보 */}
         <div className="bg-bg-card border border-border rounded-xl p-5 flex flex-wrap gap-4 items-end">
           <div>
@@ -275,7 +314,7 @@ export default function AddMatchPage() {
         <div className="flex gap-3">
           <button type="submit" disabled={saving}
             className="px-8 py-2.5 bg-accent hover:bg-accent-hover text-white rounded-lg font-semibold transition-colors disabled:opacity-50">
-            {saving ? '저장 중...' : '경기 저장'}
+            {saving ? '저장 중...' : '수정 저장'}
           </button>
           <button type="button" onClick={() => navigate('/admin')}
             className="px-8 py-2.5 bg-bg-input border border-border text-text-secondary hover:text-text-primary rounded-lg transition-colors">
