@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { initDDragon } from '../lib/ddragon';
@@ -7,7 +7,6 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 export default function HomePage() {
   const [query, setQuery] = useState('');
   const [streamers, setStreamers] = useState([]);
-  const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -17,27 +16,23 @@ export default function HomePage() {
 
   useEffect(() => {
     initDDragon();
+    async function fetchStreamers() {
+      const { data } = await supabase
+        .from('streamers')
+        .select('id, name, profile_image_url')
+        .order('name');
+      setStreamers(data || []);
+      setLoading(false);
+    }
     fetchStreamers();
   }, []);
 
-  async function fetchStreamers() {
-    const { data } = await supabase
-      .from('streamers')
-      .select('id, name, profile_image_url')
-      .order('name');
-    setStreamers(data || []);
-    setLoading(false);
-  }
-
-  useEffect(() => {
+  const suggestions = useMemo(() => {
     const q = query.trim();
-    if (!q) { setSuggestions([]); setShowSuggestions(false); return; }
-    const filtered = streamers.filter((s) =>
-      s.name.toLowerCase().includes(q.toLowerCase())
-    );
-    setSuggestions(filtered.slice(0, 6));
-    setShowSuggestions(true);
-    setActiveIndex(-1);
+    if (!q) return [];
+    return streamers
+      .filter((s) => s.name.toLowerCase().includes(q.toLowerCase()))
+      .slice(0, 6);
   }, [query, streamers]);
 
   useEffect(() => {
@@ -52,6 +47,17 @@ export default function HomePage() {
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
+
+  function handleQueryChange(e) {
+    const newQuery = e.target.value;
+    setQuery(newQuery);
+    if (!newQuery.trim()) {
+      setShowSuggestions(false);
+    } else {
+      setShowSuggestions(true);
+      setActiveIndex(-1);
+    }
+  }
 
   function handleKeyDown(e) {
     if (!showSuggestions || suggestions.length === 0) return;
@@ -74,7 +80,7 @@ export default function HomePage() {
   return (
     <div className="w-full">
       <section className="w-full py-20 px-4" style={{ background: 'linear-gradient(to bottom, #15161e, #0d0e14)' }}>
-        <div className="max-w-2xl mx-auto text-center">
+        <div style={{ maxWidth: '42rem', margin: '0 auto', textAlign: 'center' }}>
           <h1 className="text-5xl font-extrabold tracking-tight mb-3">
             <span style={{ color: '#4489c8' }}>SOOP</span>
             <span className="text-text-primary"> Tracker</span>
@@ -86,7 +92,7 @@ export default function HomePage() {
                 ref={inputRef}
                 type="text"
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={handleQueryChange}
                 onKeyDown={handleKeyDown}
                 onFocus={() => query.trim() && setShowSuggestions(true)}
                 placeholder="스트리머 이름 검색..."
@@ -128,7 +134,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="w-full max-w-6xl mx-auto px-4 py-12">
+      <section style={{ maxWidth: '1152px', margin: '0 auto', padding: '3rem 1rem' }}>
         <h2 className="text-lg font-semibold text-text-primary mb-6">
           전체 스트리머
           <span className="ml-2 text-sm font-normal text-text-secondary">({streamers.length}명)</span>

@@ -2,6 +2,19 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 
+function relativeTime(isoStr) {
+  if (!isoStr) return '-';
+  const diff = Date.now() - new Date(isoStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return '방금 전';
+  if (mins < 60) return `${mins}분 전`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}시간 전`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}일 전`;
+  return `${Math.floor(days / 30)}개월 전`;
+}
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState({ streamers: 0, matches: 0 });
   const [recentMatches, setRecentMatches] = useState([]);
@@ -18,15 +31,15 @@ export default function AdminDashboard() {
   }
 
   async function fetchRecentMatches() {
+    // created_at 기준 최신순 정렬
     const { data: matches } = await supabase
       .from('matches')
-      .select('id, played_at, season')
-      .order('played_at', { ascending: false })
+      .select('id, played_at, season, created_at')
+      .order('created_at', { ascending: false })
       .limit(10);
 
     if (!matches || matches.length === 0) { setRecentMatches([]); return; }
 
-    // 각 경기의 승리팀 파악
     const matchIds = matches.map((m) => m.id);
     const { data: parts } = await supabase
       .from('match_participants')
@@ -69,7 +82,6 @@ export default function AdminDashboard() {
     }
     fetchRecentMatches();
     fetchStats();
-    // 복사 후 바로 수정 페이지로 이동
     navigate(`/admin/match/edit/${newMatch.id}`);
   }
 
@@ -110,6 +122,7 @@ export default function AdminDashboard() {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-text-muted text-xs border-b border-border">
+                <th className="text-left px-5 py-3 font-medium">등록일</th>
                 <th className="text-left px-5 py-3 font-medium">날짜</th>
                 <th className="text-left px-5 py-3 font-medium">시즌</th>
                 <th className="text-center px-5 py-3 font-medium">승리</th>
@@ -119,6 +132,9 @@ export default function AdminDashboard() {
             <tbody className="divide-y divide-border">
               {recentMatches.map((m) => (
                 <tr key={m.id} className="hover:bg-bg-hover transition-colors">
+                  <td className="px-5 py-3">
+                    <span className="text-text-secondary">{relativeTime(m.created_at)}</span>
+                  </td>
                   <td className="px-5 py-3 text-text-primary">{m.played_at}</td>
                   <td className="px-5 py-3 text-text-secondary">{m.season}시즌</td>
                   <td className="px-5 py-3 text-center">

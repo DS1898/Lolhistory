@@ -1,6 +1,7 @@
 const FALLBACK_VERSION = '15.6.1';
 let _version = FALLBACK_VERSION;
 let _initialized = false;
+let _championMap = {}; // { championId: koreanName }
 
 export async function initDDragon() {
   if (_initialized) return _version;
@@ -31,7 +32,19 @@ export async function fetchChampions() {
     `https://ddragon.leagueoflegends.com/cdn/${version}/data/ko_KR/champion.json`
   );
   const data = await res.json();
-  return Object.values(data.data).sort((a, b) =>
-    a.name.localeCompare(b.name, 'ko')
-  );
+  const champions = Object.values(data.data);
+
+  // 챔피언 ID → 한글 이름 맵 저장
+  _championMap = {};
+  for (const c of champions) {
+    _championMap[c.id] = c.name;
+  }
+
+  return champions.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+}
+
+// 챔피언 ID → 한글 이름 반환 (맵이 없으면 ID 그대로 반환)
+export function getChampionName(championId) {
+  if (!championId) return '';
+  return _championMap[championId] || championId;
 }

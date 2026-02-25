@@ -122,7 +122,7 @@ export default function StreamerPage() {
   const recent20 = participations.slice(0, 20);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '2rem 1rem' }}>
       {/* 상단 헤더 */}
       <div className="bg-bg-card border border-border rounded-xl p-6 mb-6">
         <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
@@ -170,10 +170,10 @@ export default function StreamerPage() {
       </div>
 
       {/* 탭 */}
-      <div className="flex border-b border-border mb-6">
+      <div className="flex border-b border-border mb-6 gap-2">
         {TABS.map((label, i) => (
           <button key={label} onClick={() => setTab(i)}
-            className={`px-5 py-3 text-sm font-medium border-b-2 transition-colors ${tab === i ? 'border-win text-win' : 'border-transparent text-text-secondary hover:text-text-primary'}`}>
+            className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${tab === i ? 'border-win text-win' : 'border-transparent text-text-secondary hover:text-text-primary'}`}>
             {label}
           </button>
         ))}

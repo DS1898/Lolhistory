@@ -1,26 +1,16 @@
 import ChampionIcon from '../common/ChampionIcon';
+import { getChampionName } from '../../lib/ddragon';
 
 function WinRateBar({ rate }) {
   return (
     <div className="flex items-center gap-2">
-      <div
-        role="progressbar"
-        aria-valuenow={Math.round(rate)}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-label={`승률 ${Math.round(rate)}%`}
-        className="flex-1 h-1.5 bg-bg-hover rounded-full overflow-hidden"
-      >
+      <div className="flex-1 h-1.5 bg-bg-hover rounded-full overflow-hidden">
         <div
           className={`h-full rounded-full ${rate >= 60 ? 'bg-win' : rate <= 40 ? 'bg-loss' : 'bg-text-secondary'}`}
           style={{ width: `${rate}%` }}
         />
       </div>
-      <span
-        className={`text-xs font-semibold w-10 text-right tabular-nums ${
-          rate >= 60 ? 'text-win' : rate <= 40 ? 'text-loss' : 'text-text-secondary'
-        }`}
-      >
+      <span className={`text-xs font-semibold w-10 text-right ${rate >= 60 ? 'text-win' : rate <= 40 ? 'text-loss' : 'text-text-secondary'}`}>
         {rate.toFixed(0)}%
       </span>
     </div>
@@ -28,7 +18,6 @@ function WinRateBar({ rate }) {
 }
 
 export default function ChampionStatsTable({ participations }) {
-  // 챔피언별 집계
   const statsMap = {};
   for (const p of participations) {
     const id = p.champion_id;
@@ -49,19 +38,12 @@ export default function ChampionStatsTable({ participations }) {
       ...s,
       losses: s.games - s.wins,
       winRate: s.games > 0 ? (s.wins / s.games) * 100 : 0,
-      avgKda:
-        s.deaths === 0
-          ? 'Perfect'
-          : ((s.kills + s.assists) / s.deaths).toFixed(2),
+      avgKda: s.deaths === 0 ? 'Perfect' : ((s.kills + s.assists) / s.deaths).toFixed(2),
     }))
     .sort((a, b) => b.games - a.games);
 
   if (rows.length === 0) {
-    return (
-      <div className="text-center py-12 text-text-muted">
-        챔피언 통계 데이터가 없습니다.
-      </div>
-    );
+    return <div className="text-center py-12 text-text-muted">챔피언 통계 데이터가 없습니다.</div>;
   }
 
   return (
@@ -82,19 +64,18 @@ export default function ChampionStatsTable({ participations }) {
               <td className="py-3">
                 <div className="flex items-center gap-3">
                   <ChampionIcon championId={row.champion_id} size={36} rounded="rounded-md" />
-                  <span className="font-medium text-text-primary">{row.champion_id}</span>
+                  {/* 한글 이름 */}
+                  <span className="font-medium text-text-primary">{getChampionName(row.champion_id)}</span>
                 </div>
               </td>
-              <td className="text-center text-text-secondary tabular-nums">{row.games}</td>
-              <td className="py-3 px-2">
-                <WinRateBar rate={row.winRate} />
-              </td>
-              <td className="text-center text-xs hidden sm:table-cell tabular-nums">
+              <td className="text-center text-text-secondary">{row.games}</td>
+              <td className="py-3 px-2"><WinRateBar rate={row.winRate} /></td>
+              <td className="text-center text-xs hidden sm:table-cell">
                 <span className="text-win">{row.wins}승</span>
                 <span className="text-text-muted mx-1">/</span>
                 <span className="text-loss">{row.losses}패</span>
               </td>
-              <td className={`text-center font-semibold tabular-nums ${row.avgKda === 'Perfect' ? 'text-win' : 'text-text-primary'}`}>
+              <td className={`text-center font-semibold ${row.avgKda === 'Perfect' ? 'text-win' : 'text-text-primary'}`}>
                 {row.avgKda}
               </td>
             </tr>

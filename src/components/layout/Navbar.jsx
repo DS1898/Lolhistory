@@ -14,7 +14,7 @@ export default function Navbar() {
 
   return (
     <nav className="sticky top-0 z-50 bg-bg-card border-b border-border">
-      <div className="max-w-7xl mx-auto px-4 h-14 flex items-center gap-6">
+      <div style={{ width: '100%', padding: '0 2.5rem', height: '3.5rem', display: 'flex', alignItems: 'center', gap: '1.5rem', boxSizing: 'border-box' }}>
         {/* 로고 */}
         <Link to="/" className="flex items-center gap-1 shrink-0">
           <span className="text-lg font-extrabold text-win">SOOP</span>
@@ -30,16 +30,12 @@ export default function Navbar() {
 
         {/* 검색 (오른쪽 정렬) */}
         <form onSubmit={handleSearch} className="ml-auto flex">
-          <label htmlFor="nav-search" className="sr-only">스트리머 검색</label>
           <input
-            id="nav-search"
             type="text"
-            name="q"
-            autoComplete="off"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="스트리머 검색…"
-            className="bg-bg-input text-text-primary border border-border rounded-l-lg px-4 py-2 text-sm w-52 outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:border-accent placeholder:text-text-muted"
+            placeholder="스트리머 검색..."
+            className="bg-bg-input text-text-primary border border-border rounded-l-lg px-4 py-2 text-sm w-52 focus:outline-none focus:border-accent placeholder:text-text-muted"
           />
           <button
             type="submit"
