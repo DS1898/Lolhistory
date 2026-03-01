@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useApp } from '../../context/AppContext';
 
 function WinRateCircle({ winRate, size = 44 }) {
   const r = 18;
@@ -7,39 +8,35 @@ function WinRateCircle({ winRate, size = 44 }) {
 
   return (
     <svg width={size} height={size} viewBox="0 0 44 44">
-      <circle cx="22" cy="22" r={r} fill="none" stroke="#2a2b3d" strokeWidth="4" />
+      <circle cx="22" cy="22" r={r} fill="none" stroke="var(--border-clr)" strokeWidth="4" />
       <circle
-        cx="22"
-        cy="22"
-        r={r}
-        fill="none"
+        cx="22" cy="22" r={r} fill="none"
         stroke={winRate >= 60 ? '#4489c8' : winRate <= 40 ? '#e84057' : '#8b8b9e'}
         strokeWidth="4"
         strokeDasharray={`${filled} ${circ - filled}`}
         strokeLinecap="round"
         transform="rotate(-90 22 22)"
       />
-      <text x="22" y="26" textAnchor="middle" fontSize="9" fill="#e8e8ea" fontWeight="700">
+      <text x="22" y="26" textAnchor="middle" fontSize="9" fill="var(--text-hi)" fontWeight="700">
         {new Intl.NumberFormat('ko', { style: 'percent', maximumFractionDigits: 0 }).format(winRate / 100)}
       </text>
     </svg>
   );
 }
 
-export default function HeadToHeadTable({ participations, allParticipants, streamerId }) {
-  // 경기별로 상대 스트리머 파악
-  const h2hMap = {}; // opponentId → { name, profileImageUrl, wins, losses }
+export default function HeadToHeadTable({ participations, seasonParticipants, streamerId }) {
+  const { t } = useApp();
 
+  const h2hMap = {};
   const myMatchMap = {};
   for (const p of participations) {
-    myMatchMap[p.match.id] = p;
+    if (p.match) myMatchMap[p.match.id] = p;
   }
 
-  for (const p of allParticipants) {
+  for (const p of seasonParticipants) {
     const myData = myMatchMap[p.match_id];
     if (!myData) continue;
     if (p.streamer_id === streamerId) continue;
-    // 상대팀에 있는지 확인
     if (p.team === myData.team) continue;
 
     const oppId = p.streamer_id;
@@ -67,7 +64,7 @@ export default function HeadToHeadTable({ participations, allParticipants, strea
   if (rows.length === 0) {
     return (
       <div className="text-center py-12 text-text-muted">
-        상대 전적 데이터가 없습니다.
+        {t('h2h_no_data')}
       </div>
     );
   }
@@ -77,10 +74,10 @@ export default function HeadToHeadTable({ participations, allParticipants, strea
       <table className="w-full text-sm">
         <thead>
           <tr className="text-text-muted text-xs border-b border-border">
-            <th className="text-left pb-3 font-medium">스트리머</th>
-            <th className="text-center pb-3 font-medium">경기</th>
-            <th className="text-center pb-3 font-medium">승률</th>
-            <th className="text-center pb-3 font-medium">승/패</th>
+            <th className="text-left pb-3 font-medium">{t('col_streamer')}</th>
+            <th className="text-center pb-3 font-medium">{t('col_games')}</th>
+            <th className="text-center pb-3 font-medium">{t('col_winrate')}</th>
+            <th className="text-center pb-3 font-medium">{t('col_wl')}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
@@ -109,9 +106,9 @@ export default function HeadToHeadTable({ participations, allParticipants, strea
                 </div>
               </td>
               <td className="text-center text-xs">
-                <span className="text-win font-semibold">{row.wins}승</span>
+                <span className="text-win font-semibold">{row.wins}{t('stat_wins')}</span>
                 <span className="text-text-muted mx-1">/</span>
-                <span className="text-loss font-semibold">{row.losses}패</span>
+                <span className="text-loss font-semibold">{row.losses}{t('stat_losses')}</span>
               </td>
             </tr>
           ))}

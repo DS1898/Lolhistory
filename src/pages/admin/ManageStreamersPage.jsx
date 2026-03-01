@@ -1,5 +1,27 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { supabase } from '../../lib/supabase';
+
+function safeUrl(url) {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    return ['https:', 'http:'].includes(parsed.protocol) ? url : null;
+  } catch { return null; }
+}
+
+function ConfirmModal({ message, onConfirm, onCancel }) {
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+      <div className="bg-bg-card border border-border rounded-xl p-6 max-w-sm w-full shadow-2xl">
+        <p className="text-sm text-text-primary mb-6 whitespace-pre-line">{message}</p>
+        <div className="flex gap-3 justify-end">
+          <button onClick={onCancel} className="px-4 py-2 bg-bg-input border border-border text-text-secondary hover:text-text-primary rounded-lg text-sm transition-colors">취소</button>
+          <button onClick={onConfirm} className="px-4 py-2 bg-loss hover:bg-loss/80 text-white rounded-lg text-sm font-semibold transition-colors">삭제</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const PAGE_SIZE = 15;
 
@@ -9,27 +31,27 @@ function emptyForm() {
 
 export default function ManageStreamersPage() {
   const [streamers, setStreamers] = useState([]);
-  const [filtered, setFiltered] = useState([]);
   const [form, setForm] = useState(emptyForm());
   const [editId, setEditId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
-
-  useEffect(() => { fetchStreamers(); }, []);
-
-  useEffect(() => {
-    const q = search.trim().toLowerCase();
-    const result = q ? streamers.filter((s) => s.name.toLowerCase().includes(q)) : streamers;
-    setFiltered(result);
-    setPage(1);
-  }, [search, streamers]);
+  const [confirmTarget, setConfirmTarget] = useState(null);
 
   async function fetchStreamers() {
     const { data } = await supabase.from('streamers').select('*').order('name');
     setStreamers(data || []);
   }
+
+  useEffect(() => {
+    async function init() { await fetchStreamers(); }
+    init();
+  }, []);
+
+  const filtered = search.trim()
+    ? streamers.filter((s) => s.name.toLowerCase().includes(search.trim().toLowerCase()))
+    : streamers;
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -42,14 +64,14 @@ export default function ManageStreamersPage() {
         soop_url: form.soop_url.trim() || null,
         profile_image_url: form.profile_image_url.trim() || null,
       }).eq('id', editId);
-      if (err) { setError(err.message); setSaving(false); return; }
+      if (err) { setError('저장 중 오류가 발생했습니다.'); setSaving(false); return; }
     } else {
       const { error: err } = await supabase.from('streamers').insert({
         name: form.name.trim(),
         soop_url: form.soop_url.trim() || null,
         profile_image_url: form.profile_image_url.trim() || null,
       });
-      if (err) { setError(err.message); setSaving(false); return; }
+      if (err) { setError('저장 중 오류가 발생했습니다.'); setSaving(false); return; }
     }
     setForm(emptyForm());
     setEditId(null);
@@ -66,8 +88,8 @@ export default function ManageStreamersPage() {
   function cancelEdit() { setEditId(null); setForm(emptyForm()); setError(''); }
 
   async function handleDelete(id) {
-    if (!confirm('이 스트리머를 삭제하시겠습니까? 관련 경기 기록도 함께 삭제됩니다.')) return;
-    await supabase.from('streamers').delete().eq('id', id);
+    const { error: err } = await supabase.from('streamers').delete().eq('id', id);
+    if (err) { setError('삭제 중 오류가 발생했습니다.'); return; }
     setStreamers((prev) => prev.filter((s) => s.id !== id));
   }
 
@@ -76,6 +98,13 @@ export default function ManageStreamersPage() {
 
   return (
     <div className="max-w-3xl">
+      {confirmTarget && (
+        <ConfirmModal
+          message="이 스트리머를 삭제하시겠습니까?\n관련 경기 기록도 함께 삭제됩니다."
+          onConfirm={() => { handleDelete(confirmTarget); setConfirmTarget(null); }}
+          onCancel={() => setConfirmTarget(null)}
+        />
+      )}
       <h1 className="text-xl font-bold text-text-primary mb-8">스트리머 관리</h1>
 
       {/* 추가/수정 폼 */}
@@ -122,7 +151,7 @@ export default function ManageStreamersPage() {
 
       {/* 검색 */}
       <div className="mb-4">
-        <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
+        <input type="text" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           placeholder="스트리머 이름 검색..."
           className="w-full bg-bg-input border border-border rounded-lg px-4 py-2.5 text-sm text-text-primary focus:outline-none focus:border-accent placeholder:text-text-muted" />
       </div>
@@ -155,15 +184,15 @@ export default function ManageStreamersPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-text-primary">{s.name}</p>
-                  {s.soop_url && (
-                    <a href={s.soop_url} target="_blank" rel="noopener noreferrer"
+                  {safeUrl(s.soop_url) && (
+                    <a href={safeUrl(s.soop_url)} target="_blank" rel="noopener noreferrer"
                       className="text-xs text-text-muted hover:text-accent transition-colors truncate block">{s.soop_url}</a>
                   )}
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <button onClick={() => startEdit(s)}
                     className="text-xs text-text-secondary hover:text-text-primary transition-colors px-3 py-1 rounded-md hover:bg-bg-input">수정</button>
-                  <button onClick={() => handleDelete(s.id)}
+                  <button onClick={() => setConfirmTarget(s.id)}
                     className="text-xs text-text-muted hover:text-loss transition-colors px-3 py-1 rounded-md hover:bg-loss/10">삭제</button>
                 </div>
               </div>
@@ -181,13 +210,13 @@ export default function ManageStreamersPage() {
             {Array.from({ length: totalPages }, (_, i) => i + 1)
               .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
               .map((p, idx, arr) => (
-                <>
-                  {idx > 0 && arr[idx - 1] !== p - 1 && <span key={`ellipsis-${p}`} className="text-text-muted text-xs">...</span>}
-                  <button key={p} onClick={() => setPage(p)}
+                <Fragment key={p}>
+                  {idx > 0 && arr[idx - 1] !== p - 1 && <span className="text-text-muted text-xs">...</span>}
+                  <button onClick={() => setPage(p)}
                     className={`px-3 py-1 text-xs rounded-md transition-colors ${p === page ? 'bg-accent text-white' : 'text-text-secondary hover:text-text-primary hover:bg-bg-input'}`}>
                     {p}
                   </button>
-                </>
+                </Fragment>
               ))}
             <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}
               className="px-3 py-1 text-xs text-text-secondary hover:text-text-primary disabled:opacity-30 transition-colors">▶</button>

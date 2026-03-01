@@ -1,5 +1,6 @@
 import ChampionIcon from '../common/ChampionIcon';
 import { getChampionName } from '../../lib/ddragon';
+import { useApp } from '../../context/AppContext';
 
 function WinRateBar({ rate }) {
   return (
@@ -18,6 +19,8 @@ function WinRateBar({ rate }) {
 }
 
 export default function ChampionStatsTable({ participations }) {
+  const { t } = useApp();
+
   const statsMap = {};
   for (const p of participations) {
     const id = p.champion_id;
@@ -43,7 +46,7 @@ export default function ChampionStatsTable({ participations }) {
     .sort((a, b) => b.games - a.games);
 
   if (rows.length === 0) {
-    return <div className="text-center py-12 text-text-muted">챔피언 통계 데이터가 없습니다.</div>;
+    return <div className="text-center py-12 text-text-muted">{t('champ_no_data')}</div>;
   }
 
   return (
@@ -51,11 +54,11 @@ export default function ChampionStatsTable({ participations }) {
       <table className="w-full text-sm">
         <thead>
           <tr className="text-text-muted text-xs border-b border-border">
-            <th className="text-left pb-3 font-medium">챔피언</th>
-            <th className="text-center pb-3 font-medium">경기</th>
-            <th className="text-center pb-3 font-medium">승률</th>
-            <th className="text-center pb-3 font-medium w-40 hidden sm:table-cell">승/패</th>
-            <th className="text-center pb-3 font-medium">평균 KDA</th>
+            <th className="text-left pb-3 font-medium">{t('col_champion')}</th>
+            <th className="text-center pb-3 font-medium">{t('col_games')}</th>
+            <th className="text-center pb-3 font-medium">{t('col_winrate')}</th>
+            <th className="text-center pb-3 font-medium w-40 hidden sm:table-cell">{t('col_wl')}</th>
+            <th className="text-center pb-3 font-medium">{t('col_avg_kda')}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
@@ -64,16 +67,15 @@ export default function ChampionStatsTable({ participations }) {
               <td className="py-3">
                 <div className="flex items-center gap-3">
                   <ChampionIcon championId={row.champion_id} size={36} rounded="rounded-md" />
-                  {/* 한글 이름 */}
                   <span className="font-medium text-text-primary">{getChampionName(row.champion_id)}</span>
                 </div>
               </td>
               <td className="text-center text-text-secondary">{row.games}</td>
               <td className="py-3 px-2"><WinRateBar rate={row.winRate} /></td>
               <td className="text-center text-xs hidden sm:table-cell">
-                <span className="text-win">{row.wins}승</span>
+                <span className="text-win">{row.wins}{t('stat_wins')}</span>
                 <span className="text-text-muted mx-1">/</span>
-                <span className="text-loss">{row.losses}패</span>
+                <span className="text-loss">{row.losses}{t('stat_losses')}</span>
               </td>
               <td className={`text-center font-semibold ${row.avgKda === 'Perfect' ? 'text-win' : 'text-text-primary'}`}>
                 {row.avgKda}

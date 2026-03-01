@@ -17,7 +17,7 @@ export default function AdminLayout() {
       }
       setChecking(false);
     });
-  }, []);
+  }, [navigate]);
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -37,11 +37,11 @@ export default function AdminLayout() {
   return (
     <div className="min-h-screen bg-bg-base flex">
       {/* 사이드바 */}
-      <aside className="w-56 bg-bg-card border-r border-border flex flex-col shrink-0">
+      <aside style={{ width: 224, background: "var(--color-bg-card)", borderRight: "1px solid var(--color-border)", display: "flex", flexDirection: "column", flexShrink: 0, margin: "1rem 0", borderRadius: "0 12px 12px 0" }}>
         <div className="px-4 py-5 border-b border-border">
           <Link to="/" className="flex items-center gap-1">
-            <span className="font-extrabold text-win">SOOP</span>
-            <span className="font-extrabold text-text-primary"> Tracker</span>
+            <span className="font-extrabold text-win">So</span>
+            <span className="font-extrabold text-text-primary">Log</span>
           </Link>
           <p className="text-xs text-text-muted mt-0.5">관리자</p>
         </div>
@@ -50,6 +50,7 @@ export default function AdminLayout() {
           <NavLink to="/admin" end className={navClass}>대시보드</NavLink>
           <NavLink to="/admin/match/new" className={navClass}>경기 추가</NavLink>
           <NavLink to="/admin/streamers" className={navClass}>스트리머 관리</NavLink>
+          <NavLink to="/admin/seasons" className={navClass}>시즌 관리</NavLink>
         </nav>
 
         <div className="p-3 border-t border-border">
@@ -63,7 +64,7 @@ export default function AdminLayout() {
       </aside>
 
       {/* 메인 콘텐츠 */}
-      <main className="flex-1 overflow-auto p-8">
+      <main style={{ flex: 1, overflowY: "auto", padding: "2.5rem 3rem", marginLeft: "1rem" }}>
         <Outlet />
       </main>
     </div>

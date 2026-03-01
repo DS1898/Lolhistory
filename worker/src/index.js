@@ -17,18 +17,23 @@ const REGIONS = {
   VN2: { routing: 'sea', platform: 'vn2' },
 };
 
-function corsHeaders(origin) {
+function corsHeaders(origin, allowedOrigin) {
+  // Only reflect the requesting origin if it matches the configured allowed origin.
+  // Falls back to '*' only when no allowed origin is configured (e.g. local dev without env vars).
+  const allow = allowedOrigin
+    ? (origin === allowedOrigin ? origin : allowedOrigin)
+    : '*';
   return {
-    'Access-Control-Allow-Origin': origin || '*',
+    'Access-Control-Allow-Origin': allow,
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
   };
 }
 
-function jsonResponse(data, status = 200, origin) {
+function jsonResponse(data, status = 200, origin, allowedOrigin) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) },
+    headers: { 'Content-Type': 'application/json', ...corsHeaders(origin, allowedOrigin) },
   });
 }
 
@@ -129,13 +134,14 @@ const routes = [
 export default {
   async fetch(request, env) {
     const origin = request.headers.get('Origin') || '';
+    const allowedOrigin = env.CORS_ORIGIN || '';
 
     if (request.method === 'OPTIONS') {
-      return new Response(null, { status: 204, headers: corsHeaders(origin) });
+      return new Response(null, { status: 204, headers: corsHeaders(origin, allowedOrigin) });
     }
 
     if (request.method !== 'GET') {
-      return jsonResponse({ error: 'Method not allowed' }, 405, origin);
+      return jsonResponse({ error: 'Method not allowed' }, 405, origin, allowedOrigin);
     }
 
     const url = new URL(request.url);
@@ -146,12 +152,12 @@ export default {
       if (match) {
         const apiKey = env.RIOT_API_KEY;
         if (!apiKey || apiKey === 'RGAPI-your-api-key-here') {
-          return jsonResponse({ error: 'API key not configured' }, 500, origin);
+          return jsonResponse({ error: 'API key not configured' }, 500, origin, allowedOrigin);
         }
 
         const res = await route.handler(match, apiKey, request.url);
         if (!res) {
-          return jsonResponse({ error: 'Invalid region' }, 400, origin);
+          return jsonResponse({ error: 'Invalid region' }, 400, origin, allowedOrigin);
         }
 
         const body = await res.text();
@@ -159,12 +165,12 @@ export default {
           status: res.status,
           headers: {
             'Content-Type': 'application/json',
-            ...corsHeaders(origin),
+            ...corsHeaders(origin, allowedOrigin),
           },
         });
       }
     }
 
-    return jsonResponse({ error: 'Not found' }, 404, origin);
+    return jsonResponse({ error: 'Not found' }, 404, origin, allowedOrigin);
   },
 };
