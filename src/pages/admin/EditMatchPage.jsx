@@ -10,6 +10,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 const POSITIONS = ['TOP', 'JUNGLE', 'MID', 'ADC', 'SUPPORT'];
 const POSITION_KO = { TOP: '탑', JUNGLE: '정글', MID: '미드', ADC: '원딜', SUPPORT: '서폿' };
+const CURRENT_YEAR = new Date().getFullYear();
 
 function emptyPlayer(idx) {
   return {
@@ -98,7 +99,7 @@ function PlayerRow({ idx, player, onChange, streamers, onOpenChampionPicker, onO
       {/* Row 1: 포지션 + 스트리머 + 챔피언 + 레벨 */}
       <div className="grid gap-2 items-center mb-1.5" style={{ gridTemplateColumns: '58px 1fr 90px 72px 22px' }}>
         <div className="text-center">
-          <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ background: 'var(--bg-input)', color: 'var(--text-mid)', border: '1px solid var(--border-clr)' }}>
+          <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ background: '#1e2030', color: '#8b8b9e', border: '1px solid #2a2b3d' }}>
             {POSITION_KO[pos]}
           </span>
         </div>
@@ -134,7 +135,7 @@ function PlayerRow({ idx, player, onChange, streamers, onOpenChampionPicker, onO
               <button key={n} type="button" onClick={() => onOpenSpellPicker(field)}
                 className="border border-border rounded hover:border-accent transition-colors" style={{ padding: 1 }}>
                 {player[field] ? <SpellIcon spellId={player[field]} size={22} />
-                  : <div style={{ width: 22, height: 22, background: 'var(--bg-input)', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  : <div style={{ width: 22, height: 22, background: '#1e2030', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <span className="text-text-muted text-xs">{n}</span></div>}
               </button>
             );
@@ -147,7 +148,7 @@ function PlayerRow({ idx, player, onChange, streamers, onOpenChampionPicker, onO
               className="border border-border rounded-full hover:border-accent transition-colors" style={{ padding: 1 }}>
               {player[field]
                 ? <img src={`https://ddragon.leagueoflegends.com/cdn/img/${player[field]}`} alt="" width={22} height={22} style={{ borderRadius: '50%' }} />
-                : <div style={{ width: 22, height: 22, background: 'var(--bg-input)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                : <div style={{ width: 22, height: 22, background: '#1e2030', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <span className="text-text-muted text-xs">?</span></div>}
             </button>
           ))}
@@ -158,7 +159,7 @@ function PlayerRow({ idx, player, onChange, streamers, onOpenChampionPicker, onO
             <button key={f} type="button" onClick={() => onOpenItemPicker(f)}
               className="border border-border rounded hover:border-accent transition-colors" style={{ padding: 1 }}>
               {player[f] ? <ItemIcon itemId={player[f]} size={22} />
-                : <div style={{ width: 22, height: 22, background: 'var(--bg-input)', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                : <div style={{ width: 22, height: 22, background: '#1e2030', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <span className="text-text-muted" style={{ fontSize: 9 }}>{i < 6 ? i+1 : '장'}</span></div>}
             </button>
           ))}
@@ -178,8 +179,7 @@ export default function EditMatchPage() {
   const [runes, setRunes] = useState([]);
   const [items, setItems] = useState([]);
   const [date, setDate] = useState('');
-  const [season, setSeason] = useState(0);
-  const [activeSeasons, setActiveSeasons] = useState([]);
+  const [season, setSeason] = useState(CURRENT_YEAR);
   const [winningTeam, setWinningTeam] = useState(1);
   const [team1, setTeam1] = useState([]);
   const [team2, setTeam2] = useState([]);
@@ -187,73 +187,67 @@ export default function EditMatchPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
+  async function loadMatch() {
+    setLoading(true);
+    const { data: match } = await supabase.from('matches').select('*').eq('id', matchId).single();
+    if (!match) { navigate('/admin'); return; }
+    setDate(match.played_at);
+    setSeason(match.season);
+
+    const { data: parts } = await supabase
+      .from('match_participants')
+      .select('*, streamer:streamers(id, name, profile_image_url)')
+      .eq('match_id', matchId);
+
+    const makeTeam = (teamNum) =>
+      POSITIONS.map((pos, idx) => {
+        const p = (parts || []).find((x) => x.team === teamNum && x.position === pos);
+        if (p) return {
+          participantId: p.id,
+          streamerId: p.streamer_id,
+          streamerName: p.streamer?.name || '',
+          championId: p.champion_id || '',
+          position: pos,
+          championLevel: String(p.champion_level || ''),
+          spell1: p.spell1_id || '',
+          spell2: p.spell2_id || '',
+          runeKeystone: p.rune_keystone || '',
+          runeSecondary: p.rune_secondary || '',
+          item0: p.item0 || '', item1: p.item1 || '', item2: p.item2 || '',
+          item3: p.item3 || '', item4: p.item4 || '', item5: p.item5 || '', item6: p.item6 || '',
+          kills: String(p.kills || 0),
+          deaths: String(p.deaths || 0),
+          assists: String(p.assists || 0),
+        };
+        return emptyPlayer(idx);
+      });
+
+    const winTeam = (parts || []).find((p) => p.result === 'WIN');
+    if (winTeam) setWinningTeam(winTeam.team);
+    setTeam1(makeTeam(1));
+    setTeam2(makeTeam(2));
+    setLoading(false);
+  }
+
   useEffect(() => {
-    async function init() {
-      let seasonList = [];
-      try {
-        const [{ data: sData }, champs, sp, ru, it, { data: seasonData }] = await Promise.all([
-          supabase.from('streamers').select('id, name, profile_image_url').order('name'),
-          fetchChampions(),
-          fetchSpells(),
-          fetchRunes(),
-          fetchItems(),
-          supabase.from('seasons').select('id, label').eq('is_active', true).order('year', { ascending: false }),
-        ]);
-        seasonList = seasonData || [];
-        setStreamers(sData || []);
-        setChampions(champs);
-        setSpells(sp);
-        setRunes(ru);
-        setItems(it);
-        setActiveSeasons(seasonList);
-      } catch {
-        setError('데이터 로딩 중 오류가 발생했습니다.');
-        return;
-      }
-
-      setLoading(true);
-      const { data: match } = await supabase.from('matches').select('*').eq('id', matchId).single();
-      if (!match) { navigate('/admin'); return; }
-      setDate(match.played_at);
-      // match.season(연도 정수)이 활성 시즌 목록에 있으면 그대로 사용, 없으면 첫 번째 활성 시즌으로 설정
-      setSeason(seasonList.find((s) => s.year === match.season)?.year ?? seasonList[0]?.year ?? 0);
-
-      const { data: parts } = await supabase
-        .from('match_participants')
-        .select('*, streamer:streamers(id, name, profile_image_url)')
-        .eq('match_id', matchId);
-
-      const makeTeam = (teamNum) =>
-        POSITIONS.map((pos, idx) => {
-          const p = (parts || []).find((x) => x.team === teamNum && x.position === pos);
-          if (p) return {
-            participantId: p.id,
-            streamerId: p.streamer_id,
-            streamerName: p.streamer?.name || '',
-            championId: p.champion_id || '',
-            position: pos,
-            championLevel: String(p.champion_level || ''),
-            spell1: p.spell1_id || '',
-            spell2: p.spell2_id || '',
-            runeKeystone: p.rune_keystone || '',
-            runeSecondary: p.rune_secondary || '',
-            item0: p.item0 || '', item1: p.item1 || '', item2: p.item2 || '',
-            item3: p.item3 || '', item4: p.item4 || '', item5: p.item5 || '', item6: p.item6 || '',
-            kills: String(p.kills || 0),
-            deaths: String(p.deaths || 0),
-            assists: String(p.assists || 0),
-          };
-          return emptyPlayer(idx);
-        });
-
-      const winTeam = (parts || []).find((p) => p.result === 'WIN');
-      if (winTeam) setWinningTeam(winTeam.team);
-      setTeam1(makeTeam(1));
-      setTeam2(makeTeam(2));
-      setLoading(false);
-    }
-    init();
-  }, [matchId, navigate]);
+    Promise.all([
+      supabase.from('streamers').select('id, name, profile_image_url').order('name'),
+      fetchChampions(),
+      fetchSpells(),
+      fetchRunes(),
+      fetchItems(),
+    ]).then(([{ data: sData }, champs, sp, ru, it]) => {
+      setStreamers(sData || []);
+      setChampions(champs);
+      setSpells(sp);
+      setRunes(ru);
+      setItems(it);
+    }).catch(() => {
+      setError('데이터 로딩 중 오류가 발생했습니다.');
+    });
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadMatch();
+  }, [matchId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function updatePlayer(teamNum, idx, field, value) {
     const setter = teamNum === 1 ? setTeam1 : setTeam2;
@@ -263,9 +257,9 @@ export default function EditMatchPage() {
   async function handleSave(e) {
     e.preventDefault(); setError(''); setSaving(true);
     const { error: updateErr } = await supabase.from('matches').update({ played_at: date, season }).eq('id', matchId);
-    if (updateErr) { setError('경기 수정 중 오류가 발생했습니다.'); setSaving(false); return; }
+    if (updateErr) { setError(updateErr.message); setSaving(false); return; }
     const { error: deleteErr } = await supabase.from('match_participants').delete().eq('match_id', matchId);
-    if (deleteErr) { setError('경기 수정 중 오류가 발생했습니다.'); setSaving(false); return; }
+    if (deleteErr) { setError(deleteErr.message); setSaving(false); return; }
 
     const participants = [];
     for (const [teamPlayers, teamNum] of [[team1, 1], [team2, 2]]) {
@@ -286,13 +280,14 @@ export default function EditMatchPage() {
       }
     }
     const { error: partErr } = await supabase.from('match_participants').insert(participants);
-    if (partErr) { setError('경기 수정 중 오류가 발생했습니다.'); setSaving(false); return; }
+    if (partErr) { setError(partErr.message); setSaving(false); return; }
     navigate('/admin');
   }
 
   const keystones = getAllKeystones(runes);
   const secPaths = getSecondaryPaths(runes);
-  const itemList = Object.entries(items).filter(([, item]) => item.gold?.purchasable && item.maps?.['11']).map(([id, item]) => ({ id, name: item.name }));
+  const itemList    = Object.entries(items).filter(([, item]) => item.gold?.purchasable && item.maps?.['11']).map(([id, item]) => ({ id, name: item.name }));
+  const trinketList = Object.entries(items).filter(([, item]) => item.tags?.includes('Trinket') && item.maps?.['11']).map(([id, item]) => ({ id, name: item.name }));
 
   function openPicker(team, idx, type, field = null) { setPickerTarget({ team, idx, type, field }); }
   function closePicker() { setPickerTarget(null); }
@@ -323,9 +318,7 @@ export default function EditMatchPage() {
           <div><label className="block text-xs text-text-secondary mb-1.5">시즌</label>
             <select value={season} onChange={(e) => setSeason(Number(e.target.value))}
               className="bg-bg-input border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent">
-              {activeSeasons.length === 0
-                ? <option value="">시즌 없음</option>
-                : activeSeasons.map((s) => <option key={s.id} value={s.year}>{s.label}</option>)}
+              {[CURRENT_YEAR-1, CURRENT_YEAR, CURRENT_YEAR+1].map((y) => <option key={y} value={y}>{y}</option>)}
             </select></div>
           <div><label className="block text-xs text-text-secondary mb-1.5">승리팀</label>
             <div className="flex gap-2">
@@ -347,7 +340,7 @@ export default function EditMatchPage() {
             </div>
             <div className="px-4">
               {players.map((p, i) => (
-                <PlayerRow key={POSITIONS[i]} idx={i} player={p}
+                <PlayerRow key={i} idx={i} player={p}
                   onChange={(field, val) => updatePlayer(teamNum, i, field, val)}
                   streamers={streamers}
                   onOpenChampionPicker={() => openPicker(teamNum, i, 'champion')}
@@ -371,7 +364,7 @@ export default function EditMatchPage() {
       </form>
 
       {pickerTarget?.type === 'champion' && (
-        <PickerModal title="챔피언 선택" items={champions} searchKey="name" onClose={closePicker}
+        <PickerModal title="챔피언 선택" items={champions} searchKey="name" onSelect={handlePickerSelect} onClose={closePicker}
           renderItem={(c) => (
             <button key={c.id} onClick={() => handlePickerSelect(c.id)}
               className="flex flex-col items-center gap-1 p-1 rounded-lg hover:bg-bg-hover transition-colors group">
@@ -381,7 +374,7 @@ export default function EditMatchPage() {
           )} />
       )}
       {pickerTarget?.type === 'spell' && (
-        <PickerModal title="스펠 선택" items={spells} searchKey="name" onClose={closePicker}
+        <PickerModal title="스펠 선택" items={spells} searchKey="name" onSelect={handlePickerSelect} onClose={closePicker}
           renderItem={(s) => (
             <button key={s.id} onClick={() => handlePickerSelect(s.id)}
               className="flex flex-col items-center gap-1 p-1 rounded-lg hover:bg-bg-hover transition-colors group">
@@ -393,7 +386,7 @@ export default function EditMatchPage() {
       {pickerTarget?.type === 'rune' && (
         <PickerModal title={pickerTarget.field === 'runeKeystone' ? '키스톤 룬 선택' : '보조 경로 선택'}
           items={pickerTarget.field === 'runeKeystone' ? keystones : secPaths}
-          searchKey="name" onClose={closePicker}
+          searchKey="name" onSelect={handlePickerSelect} onClose={closePicker}
           renderItem={(r) => (
             <button key={r.id} onClick={() => handlePickerSelect(r.icon)}
               className="flex flex-col items-center gap-1 p-1 rounded-lg hover:bg-bg-hover transition-colors group">
@@ -403,7 +396,7 @@ export default function EditMatchPage() {
           )} />
       )}
       {pickerTarget?.type === 'item' && (
-        <PickerModal title="아이템 선택" items={itemList} searchKey="name" onClose={closePicker}
+        <PickerModal title={pickerTarget.field === 'item6' ? '장신구 선택' : '아이템 선택'} items={pickerTarget.field === 'item6' ? trinketList : itemList} searchKey="name" onSelect={handlePickerSelect} onClose={closePicker}
           renderItem={(item) => (
             <button key={item.id} onClick={() => handlePickerSelect(item.id)}
               className="flex flex-col items-center gap-1 p-1 rounded-lg hover:bg-bg-hover transition-colors group">

@@ -9,6 +9,7 @@ import ItemIcon from '../../components/common/ItemIcon';
 
 const POSITIONS = ['TOP', 'JUNGLE', 'MID', 'ADC', 'SUPPORT'];
 const POSITION_KO = { TOP: '탑', JUNGLE: '정글', MID: '미드', ADC: '원딜', SUPPORT: '서폿' };
+const CURRENT_YEAR = new Date().getFullYear();
 
 function emptyPlayer(idx) {
   return {
@@ -96,7 +97,7 @@ function PlayerRow({ idx, player, onChange, streamers, onOpenChampionPicker, onO
       {/* Row 1: 기본 정보 */}
       <div className="grid gap-2 items-center mb-2" style={{ gridTemplateColumns: '60px 1fr 90px 70px 26px 130px' }}>
         <div className="text-center">
-          <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ background: 'var(--bg-input)', color: 'var(--text-mid)', border: '1px solid var(--border-clr)' }}>
+          <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ background: '#1e2030', color: '#8b8b9e', border: '1px solid #2a2b3d' }}>
             {POSITION_KO[pos]}
           </span>
         </div>
@@ -133,7 +134,7 @@ function PlayerRow({ idx, player, onChange, streamers, onOpenChampionPicker, onO
               <button key={n} type="button" onClick={() => onOpenSpellPicker(field)}
                 className="border border-border rounded hover:border-accent transition-colors" style={{ padding: 1 }}>
                 {player[field] ? <SpellIcon spellId={player[field]} size={22} />
-                  : <div style={{ width: 22, height: 22, background: 'var(--bg-input)', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  : <div style={{ width: 22, height: 22, background: '#1e2030', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <span className="text-text-muted text-xs">{n}</span></div>}
               </button>
             );
@@ -148,7 +149,7 @@ function PlayerRow({ idx, player, onChange, streamers, onOpenChampionPicker, onO
               className="border border-border rounded-full hover:border-accent transition-colors" style={{ padding: 1 }}>
               {player[field]
                 ? <img src={`https://ddragon.leagueoflegends.com/cdn/img/${player[field]}`} alt="" width={22} height={22} style={{ borderRadius: '50%' }} />
-                : <div style={{ width: 22, height: 22, background: 'var(--bg-input)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                : <div style={{ width: 22, height: 22, background: '#1e2030', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <span className="text-text-muted text-xs">?</span></div>}
             </button>
           ))}
@@ -161,7 +162,7 @@ function PlayerRow({ idx, player, onChange, streamers, onOpenChampionPicker, onO
             <button key={f} type="button" onClick={() => onOpenItemPicker(f)}
               className="border border-border rounded hover:border-accent transition-colors" style={{ padding: 1 }}>
               {player[f] ? <ItemIcon itemId={player[f]} size={22} />
-                : <div style={{ width: 22, height: 22, background: 'var(--bg-input)', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                : <div style={{ width: 22, height: 22, background: '#1e2030', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <span className="text-text-muted" style={{ fontSize: 9 }}>{i < 6 ? i+1 : '장'}</span></div>}
             </button>
           ))}
@@ -179,8 +180,7 @@ export default function AddMatchPage() {
   const [runes, setRunes] = useState([]);
   const [items, setItems] = useState([]);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
-  const [season, setSeason] = useState(0);
-  const [activeSeasons, setActiveSeasons] = useState([]);
+  const [season, setSeason] = useState(CURRENT_YEAR);
   const [winningTeam, setWinningTeam] = useState(1);
   const [team1, setTeam1] = useState(Array.from({ length: 5 }, (_, i) => emptyPlayer(i)));
   const [team2, setTeam2] = useState(Array.from({ length: 5 }, (_, i) => emptyPlayer(i)));
@@ -191,13 +191,6 @@ export default function AddMatchPage() {
   useEffect(() => {
     supabase.from('streamers').select('id, name, profile_image_url').order('name')
       .then(({ data, error }) => { if (!error) setStreamers(data || []); })
-      .catch(() => {});
-    supabase.from('seasons').select('id, label').eq('is_active', true).order('year', { ascending: false })
-      .then(({ data }) => {
-        const list = data || [];
-        setActiveSeasons(list);
-        if (list.length > 0) setSeason(list[0].year);
-      })
       .catch(() => {});
     fetchChampions().then(setChampions).catch(() => {});
     fetchSpells().then(setSpells).catch(() => {});
@@ -217,7 +210,7 @@ export default function AddMatchPage() {
     }
     setSaving(true);
     const { data: matchData, error: matchErr } = await supabase.from('matches').insert({ played_at: date, season }).select('id').single();
-    if (matchErr) { setError('경기 저장 중 오류가 발생했습니다.'); setSaving(false); return; }
+    if (matchErr) { setError(matchErr.message); setSaving(false); return; }
     const participants = [];
     for (const [teamPlayers, teamNum] of [[team1, 1], [team2, 2]]) {
       for (let i = 0; i < teamPlayers.length; i++) {
@@ -237,14 +230,15 @@ export default function AddMatchPage() {
       }
     }
     const { error: partErr } = await supabase.from('match_participants').insert(participants);
-    if (partErr) { setError('경기 저장 중 오류가 발생했습니다.'); setSaving(false); return; }
+    if (partErr) { setError(partErr.message); setSaving(false); return; }
     navigate('/admin');
   }
 
   // 픽커 렌더
   const keystones = getAllKeystones(runes);
   const secPaths = getSecondaryPaths(runes);
-  const itemList = Object.entries(items).filter(([, item]) => item.gold?.purchasable && item.maps?.['11']).map(([id, item]) => ({ id, name: item.name }));
+  const itemList    = Object.entries(items).filter(([, item]) => item.gold?.purchasable && item.maps?.['11']).map(([id, item]) => ({ id, name: item.name }));
+  const trinketList = Object.entries(items).filter(([, item]) => item.tags?.includes('Trinket') && item.maps?.['11']).map(([id, item]) => ({ id, name: item.name }));
 
   function openPicker(team, idx, type, field = null) {
     setPickerTarget({ team, idx, type, field });
@@ -274,9 +268,7 @@ export default function AddMatchPage() {
           <div><label className="block text-xs text-text-secondary mb-1.5">시즌</label>
             <select value={season} onChange={(e) => setSeason(Number(e.target.value))}
               className="bg-bg-input border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent">
-              {activeSeasons.length === 0
-                ? <option value="">시즌 없음</option>
-                : activeSeasons.map((s) => <option key={s.id} value={s.year}>{s.label}</option>)}
+              {[CURRENT_YEAR-1, CURRENT_YEAR, CURRENT_YEAR+1].map((y) => <option key={y} value={y}>{y}</option>)}
             </select></div>
           <div><label className="block text-xs text-text-secondary mb-1.5">승리팀</label>
             <div className="flex gap-2">
@@ -298,7 +290,7 @@ export default function AddMatchPage() {
             </div>
             <div className="px-4">
               {players.map((p, i) => (
-                <PlayerRow key={POSITIONS[i]} idx={i} player={p}
+                <PlayerRow key={i} idx={i} player={p}
                   onChange={(field, val) => updatePlayer(teamNum, i, field, val)}
                   streamers={streamers}
                   onOpenChampionPicker={() => openPicker(teamNum, i, 'champion')}
@@ -323,7 +315,7 @@ export default function AddMatchPage() {
 
       {/* 픽커 모달들 */}
       {pickerTarget?.type === 'champion' && (
-        <PickerModal title="챔피언 선택" items={champions} searchKey="name" onClose={closePicker}
+        <PickerModal title="챔피언 선택" items={champions} searchKey="name" onSelect={handlePickerSelect} onClose={closePicker}
           renderItem={(c) => (
             <button key={c.id} onClick={() => handlePickerSelect(c.id)}
               className="flex flex-col items-center gap-1 p-1 rounded-lg hover:bg-bg-hover transition-colors group" title={c.name}>
@@ -333,7 +325,7 @@ export default function AddMatchPage() {
           )} />
       )}
       {pickerTarget?.type === 'spell' && (
-        <PickerModal title="스펠 선택" items={spells} searchKey="name" onClose={closePicker}
+        <PickerModal title="스펠 선택" items={spells} searchKey="name" onSelect={handlePickerSelect} onClose={closePicker}
           renderItem={(s) => (
             <button key={s.id} onClick={() => handlePickerSelect(s.id)}
               className="flex flex-col items-center gap-1 p-1 rounded-lg hover:bg-bg-hover transition-colors group" title={s.name}>
@@ -345,7 +337,7 @@ export default function AddMatchPage() {
       {pickerTarget?.type === 'rune' && (
         <PickerModal title={pickerTarget.field === 'runeKeystone' ? '키스톤 룬 선택' : '보조 경로 선택'}
           items={pickerTarget.field === 'runeKeystone' ? keystones : secPaths}
-          searchKey="name" onClose={closePicker}
+          searchKey="name" onSelect={handlePickerSelect} onClose={closePicker}
           renderItem={(r) => (
             <button key={r.id} onClick={() => handlePickerSelect(r.icon)}
               className="flex flex-col items-center gap-1 p-1 rounded-lg hover:bg-bg-hover transition-colors group" title={r.name}>
@@ -355,7 +347,7 @@ export default function AddMatchPage() {
           )} />
       )}
       {pickerTarget?.type === 'item' && (
-        <PickerModal title="아이템 선택" items={itemList} searchKey="name" onClose={closePicker}
+        <PickerModal title={pickerTarget.field === 'item6' ? '장신구 선택' : '아이템 선택'} items={pickerTarget.field === 'item6' ? trinketList : itemList} searchKey="name" onSelect={handlePickerSelect} onClose={closePicker}
           renderItem={(item) => (
             <button key={item.id} onClick={() => handlePickerSelect(item.id)}
               className="flex flex-col items-center gap-1 p-1 rounded-lg hover:bg-bg-hover transition-colors group" title={item.name}>
