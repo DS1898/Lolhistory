@@ -17,7 +17,7 @@ function emptyPlayer(idx) {
     position: POSITIONS[idx], championLevel: '',
     spell1: '', spell2: '',
     runeKeystone: '', runeSecondary: '',
-    item0: '', item1: '', item2: '', item3: '', item4: '', item5: '', item6: '',
+    item0: '', item1: '', item2: '', item3: '', item4: '', item5: '', item6: '', item7: '',
     kills: '', deaths: '', assists: '',
   };
 }
@@ -158,12 +158,12 @@ function PlayerRow({ idx, player, onChange, streamers, onOpenChampionPicker, onO
         {/* 아이템 */}
         <div className="flex gap-1 items-center">
           <span className="text-xs text-text-muted mr-1">아이템</span>
-          {['item0','item1','item2','item3','item4','item5','item6'].map((f, i) => (
+          {[...['item0','item1','item2','item3','item4','item5','item6'], ...(player.position === 'ADC' ? ['item7'] : [])].map((f, i) => (
             <button key={f} type="button" onClick={() => onOpenItemPicker(f)}
               className="border border-border rounded hover:border-accent transition-colors" style={{ padding: 1 }}>
               {player[f] ? <ItemIcon itemId={player[f]} size={22} />
                 : <div style={{ width: 22, height: 22, background: '#1e2030', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <span className="text-text-muted" style={{ fontSize: 9 }}>{i < 6 ? i+1 : '장'}</span></div>}
+                  <span className="text-text-muted" style={{ fontSize: 9 }}>{f === 'item7' ? '장' : i < 6 ? i+1 : player.position === 'ADC' ? 7 : '장'}</span></div>}
             </button>
           ))}
         </div>
@@ -223,7 +223,7 @@ export default function AddMatchPage() {
           spell1_id: p.spell1 || null, spell2_id: p.spell2 || null,
           rune_keystone: p.runeKeystone || null, rune_secondary: p.runeSecondary || null,
           item0: p.item0||null, item1: p.item1||null, item2: p.item2||null,
-          item3: p.item3||null, item4: p.item4||null, item5: p.item5||null, item6: p.item6||null,
+          item3: p.item3||null, item4: p.item4||null, item5: p.item5||null, item6: p.item6||null, item7: p.position === 'ADC' ? (p.item7||null) : null,
           kills: parseInt(p.kills)||0, deaths: parseInt(p.deaths)||0, assists: parseInt(p.assists)||0,
           result: teamNum === winningTeam ? 'WIN' : 'LOSS',
         });
@@ -237,8 +237,7 @@ export default function AddMatchPage() {
   // 픽커 렌더
   const keystones = getAllKeystones(runes);
   const secPaths = getSecondaryPaths(runes);
-  const itemList    = Object.entries(items).filter(([, item]) => item.gold?.purchasable && item.maps?.['11']).map(([id, item]) => ({ id, name: item.name }));
-  const trinketList = Object.entries(items).filter(([, item]) => item.tags?.includes('Trinket') && item.maps?.['11']).map(([id, item]) => ({ id, name: item.name }));
+  const itemList = Object.entries(items).filter(([, item]) => item.gold?.purchasable && item.maps?.['11']).map(([id, item]) => ({ id, name: item.name }));
 
   function openPicker(team, idx, type, field = null) {
     setPickerTarget({ team, idx, type, field });
@@ -346,8 +345,11 @@ export default function AddMatchPage() {
             </button>
           )} />
       )}
-      {pickerTarget?.type === 'item' && (
-        <PickerModal title={pickerTarget.field === 'item6' ? '장신구 선택' : '아이템 선택'} items={pickerTarget.field === 'item6' ? trinketList : itemList} searchKey="name" onSelect={handlePickerSelect} onClose={closePicker}
+      {pickerTarget?.type === 'item' && (() => {
+        const isADC = pickerTarget && teams[pickerTarget.team]?.[pickerTarget.idx]?.position === 'ADC';
+        const isTrinketSlot = pickerTarget?.field === 'item7' || (pickerTarget?.field === 'item6' && !isADC);
+        return (
+        <PickerModal title={isTrinketSlot ? '장신구 선택' : '아이템 선택'} items={isTrinketSlot ? trinketList : itemList} searchKey="name" onSelect={handlePickerSelect} onClose={closePicker}
           renderItem={(item) => (
             <button key={item.id} onClick={() => handlePickerSelect(item.id)}
               className="flex flex-col items-center gap-1 p-1 rounded-lg hover:bg-bg-hover transition-colors group" title={item.name}>
