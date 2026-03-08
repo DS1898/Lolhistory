@@ -17,21 +17,13 @@ export default function ContactPage() {
     const { error } = await supabase.from('inquiries').insert({
       name: form.name.trim(),
       message: form.message.trim(),
-      is_read: false,
     });
 
     setSending(false);
 
     if (error) {
-      console.error('[문의 전송 오류]', error);
-      // 원인별 안내 메시지
-      if (error.code === '42501' || error.message?.includes('row-level security')) {
-        setErr('서버 보안 정책 오류입니다. 관리자에게 문의해주세요. (RLS)');
-      } else if (error.code === '42P01' || error.message?.includes('does not exist')) {
-        setErr('서버 테이블 설정이 필요합니다. 관리자에게 문의해주세요.');
-      } else {
-        setErr(`전송 실패: ${error.message || '알 수 없는 오류'}`);
-      }
+      console.error('[문의 전송 오류 전체]', JSON.stringify(error, null, 2));
+      setErr(`[${error.code}] ${error.message} / details: ${error.details} / hint: ${error.hint}`);
       return;
     }
 
