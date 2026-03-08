@@ -44,7 +44,7 @@ export default function Footer() {
           <div>
             <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#4489c8', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 14 }}>{t('footer_menu')}</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {[['/', t('footer_home')], ['/streamers', t('footer_streamers')]].map(([to, label]) => (
+              {[['/', t('footer_home')], ['/streamers', t('footer_streamers')], ['/contact', '문의하기']].map(([to, label]) => (
                 <Link key={to} to={to} style={{ fontSize: '0.85rem', color: 'var(--text-lo)', textDecoration: 'none', transition: 'color 0.2s' }}
                   onMouseEnter={(e) => e.target.style.color = 'var(--text-hi)'}
                   onMouseLeave={(e) => e.target.style.color = 'var(--text-lo)'}>

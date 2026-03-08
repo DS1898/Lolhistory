@@ -100,7 +100,7 @@ function StreakCarousel({ streamers, t }) {
     scrollRef.current?.scrollBy({ left: dir === 'left' ? -280 : 280, behavior: 'smooth' });
   }
 
-  if (!loaded || !streakData.length) return null;
+  if (!loaded) return null;
 
   const wins   = streakData.filter((s) => s.type === 'win').slice(0, MAX_WIN_CARDS);
   const losses = streakData.filter((s) => s.type === 'loss').slice(0, MAX_LOSS_CARDS);
@@ -113,26 +113,34 @@ function StreakCarousel({ streamers, t }) {
           <span style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-hi)' }}>{t('streak_title')}</span>
           <span style={{ fontSize: '0.72rem', color: 'var(--text-lo)' }}>{t('streak_subtitle')}</span>
         </div>
-        <div style={{ display: 'flex', gap: 6 }}>
-          {['left','right'].map((dir) => (
-            <button key={dir} onClick={() => scroll(dir)}
-              style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--bg-input)', border: '1px solid var(--border-clr)', color: 'var(--text-mid)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, transition: 'all 0.2s' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(68,137,200,0.2)'; e.currentTarget.style.color = '#4489c8'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-input)'; e.currentTarget.style.color = 'var(--text-mid)'; }}>
-              {dir === 'left' ? '‹' : '›'}
-            </button>
-          ))}
-        </div>
+        {streakData.length > 0 && (
+          <div style={{ display: 'flex', gap: 6 }}>
+            {['left','right'].map((dir) => (
+              <button key={dir} onClick={() => scroll(dir)}
+                style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--bg-input)', border: '1px solid var(--border-clr)', color: 'var(--text-mid)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, transition: 'all 0.2s' }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(68,137,200,0.2)'; e.currentTarget.style.color = '#4489c8'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-input)'; e.currentTarget.style.color = 'var(--text-mid)'; }}>
+                {dir === 'left' ? '‹' : '›'}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* 카드 스크롤 */}
-      <div ref={scrollRef} style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8, scrollbarWidth: 'none' }}>
-        {wins.map((s) => <StreakCard key={`w-${s.id}`} s={s} t={t} />)}
-        {wins.length > 0 && losses.length > 0 && (
-          <div style={{ width: 1, background: 'var(--border-clr)', flexShrink: 0, alignSelf: 'stretch', margin: '0 4px' }} />
-        )}
-        {losses.map((s) => <StreakCard key={`l-${s.id}`} s={s} t={t} />)}
-      </div>
+      {/* 카드 스크롤 or 빈 상태 */}
+      {streakData.length === 0 ? (
+        <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-lo)', fontSize: '0.85rem', background: 'var(--bg-card)', border: '1px solid var(--border-clr)', borderRadius: 12 }}>
+          현재 연승/연패 중인 스트리머가 없습니다.
+        </div>
+      ) : (
+        <div ref={scrollRef} style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8, scrollbarWidth: 'none' }}>
+          {wins.map((s) => <StreakCard key={`w-${s.id}`} s={s} t={t} />)}
+          {wins.length > 0 && losses.length > 0 && (
+            <div style={{ width: 1, background: 'var(--border-clr)', flexShrink: 0, alignSelf: 'stretch', margin: '0 4px' }} />
+          )}
+          {losses.map((s) => <StreakCard key={`l-${s.id}`} s={s} t={t} />)}
+        </div>
+      )}
     </div>
   );
 }

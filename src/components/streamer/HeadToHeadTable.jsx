@@ -24,7 +24,8 @@ function WinRateCircle({ winRate, size = 44 }) {
   );
 }
 
-export default function HeadToHeadTable({ participations, seasonParticipants, streamerId }) {
+export default function HeadToHeadTable({ participations, allParticipants, streamerId }) {
+  const seasonParticipants = allParticipants ?? [];
   const { t } = useApp();
 
   const h2hMap = {};

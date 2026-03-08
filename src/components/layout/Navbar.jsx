@@ -276,6 +276,13 @@ export default function Navbar() {
           {t('nav_streamers')}
         </Link>
 
+        {/* 문의하기 링크 */}
+        <Link to="/contact" style={{ fontSize: '0.875rem', color: 'var(--text-mid)', textDecoration: 'none', transition: 'color 0.2s' }}
+          onMouseEnter={(e) => e.target.style.color = 'var(--text-hi)'}
+          onMouseLeave={(e) => e.target.style.color = 'var(--text-mid)'}>
+          문의하기
+        </Link>
+
         {/* 우측 영역 */}
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
           {/* 홈에서는 검색창 숨김, 다른 페이지에서만 표시 */}
