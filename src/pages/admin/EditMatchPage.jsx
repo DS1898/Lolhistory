@@ -25,10 +25,25 @@ function emptyPlayer(idx) {
 }
 
 /* 공통 픽커 모달 */
-function PickerModal({ title, items, onClose, renderItem, searchKey = 'name' }) {
+function PickerModal({ title, items, onClose, renderItem, searchKey = 'name', onSelect, enableNumberShortcut = false }) {
   const [search, setSearch] = useState('');
   const inputRef = useRef(null);
   useEffect(() => { inputRef.current?.focus(); }, []);
+
+  // 숫자 단축키 (보조룬 전용)
+  useEffect(() => {
+    if (!enableNumberShortcut || !onSelect) return;
+    function handleKey(e) {
+      const n = parseInt(e.key);
+      if (n >= 1 && n <= items.length) {
+        const item = items[n - 1];
+        if (item) onSelect(item.icon ?? item.id);
+      }
+    }
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [enableNumberShortcut, items, onSelect]);
+
   const filtered = search
     ? items.filter((c) => (c[searchKey] || '').toLowerCase().includes(search.toLowerCase()))
     : items;
@@ -37,6 +52,18 @@ function PickerModal({ title, items, onClose, renderItem, searchKey = 'name' }) 
       <div className="bg-bg-card border border-border rounded-xl w-full max-w-2xl max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="p-4 border-b border-border flex items-center gap-3">
           <span className="text-sm font-semibold text-text-primary">{title}</span>
+          {enableNumberShortcut && (
+            <div style={{ display: 'flex', gap: 4 }}>
+              {items.slice(0, 5).map((item, i) => (
+                <span key={i} style={{
+                  fontSize: '0.65rem', fontWeight: 700,
+                  background: 'rgba(68,137,200,0.15)', border: '1px solid rgba(68,137,200,0.3)',
+                  color: '#4489c8', borderRadius: 5, padding: '1px 5px',
+                }} title={item.name}>{i + 1}</span>
+              ))}
+              <span style={{ fontSize: '0.65rem', color: '#55556e', alignSelf: 'center' }}>단축키</span>
+            </div>
+          )}
           <input ref={inputRef} type="text" value={search} onChange={(e) => setSearch(e.target.value)}
             placeholder="검색..." className="flex-1 bg-bg-input border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent placeholder:text-text-muted" />
           <button onClick={onClose} className="text-text-muted hover:text-text-primary text-lg">✕</button>
@@ -45,6 +72,29 @@ function PickerModal({ title, items, onClose, renderItem, searchKey = 'name' }) 
           {filtered.map((item, i) => renderItem(item, i))}
         </div>
       </div>
+    </div>
+  );
+}
+
+/* 슬롯 클리어 래퍼 */
+function ClearableSlot({ hasValue, onClear, children }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div style={{ position: 'relative', display: 'inline-flex' }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}>
+      {children}
+      {hasValue && hovered && (
+        <button type="button" onClick={(e) => { e.stopPropagation(); onClear(); }}
+          style={{
+            position: 'absolute', top: -5, right: -5,
+            width: 14, height: 14, borderRadius: '50%',
+            background: '#e84057', border: '1.5px solid var(--bg-card)',
+            color: '#fff', fontSize: 9, fontWeight: 900,
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 10, padding: 0, lineHeight: 1,
+          }}>✕</button>
+      )}
     </div>
   );
 }
@@ -105,12 +155,14 @@ function PlayerRow({ idx, player, onChange, streamers, onOpenChampionPicker, onO
         </div>
         <StreamerInput value={player.streamerId} streamerName={player.streamerName} streamers={streamers}
           onChange={(id, name) => { onChange('streamerId', id); onChange('streamerName', name); }} />
-        <button type="button" onClick={() => onOpenChampionPicker()}
-          className="flex items-center gap-1 bg-bg-input border border-border rounded-lg px-2 py-1.5 hover:border-accent transition-colors">
-          {player.championId ? <><ChampionIcon championId={player.championId} size={18} rounded="rounded-sm" /><span className="text-xs truncate">{player.championId}</span></>
-            : <span className="text-xs text-text-muted">챔피언</span>}
-        </button>
-        <input type="number" min="1" max="18" value={player.championLevel}
+        <ClearableSlot hasValue={!!player.championId} onClear={() => onChange('championId', '')}>
+          <button type="button" onClick={() => onOpenChampionPicker()}
+            className="flex items-center gap-1 bg-bg-input border border-border rounded-lg px-2 py-1.5 hover:border-accent transition-colors">
+            {player.championId ? <><ChampionIcon championId={player.championId} size={18} rounded="rounded-sm" /><span className="text-xs truncate">{player.championId}</span></>
+              : <span className="text-xs text-text-muted">챔피언</span>}
+          </button>
+        </ClearableSlot>
+        <input type="number" min="1" max={player.position === 'TOP' ? 20 : 18} value={player.championLevel}
           onChange={(e) => onChange('championLevel', e.target.value)} placeholder="Lv"
           className="bg-bg-input border border-border rounded-lg px-2 py-1.5 text-sm text-center text-text-primary focus:outline-none focus:border-accent placeholder:text-text-muted" />
         <span className="text-xs text-text-muted text-center" style={{fontSize:9}}>레벨</span>
@@ -132,36 +184,42 @@ function PlayerRow({ idx, player, onChange, streamers, onOpenChampionPicker, onO
           {[1, 2].map((n) => {
             const field = `spell${n}`;
             return (
-              <button key={n} type="button" onClick={() => onOpenSpellPicker(field)}
-                className="border border-border rounded hover:border-accent transition-colors" style={{ padding: 1 }}>
-                {player[field] ? <SpellIcon spellId={player[field]} size={22} />
-                  : <div style={{ width: 22, height: 22, background: '#1e2030', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span className="text-text-muted text-xs">{n}</span></div>}
-              </button>
+              <ClearableSlot key={n} hasValue={!!player[field]} onClear={() => onChange(field, '')}>
+                <button type="button" onClick={() => onOpenSpellPicker(field)}
+                  className="border border-border rounded hover:border-accent transition-colors" style={{ padding: 1 }}>
+                  {player[field] ? <SpellIcon spellId={player[field]} size={22} />
+                    : <div style={{ width: 22, height: 22, background: '#1e2030', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span className="text-text-muted text-xs">{n}</span></div>}
+                </button>
+              </ClearableSlot>
             );
           })}
         </div>
         <div className="flex gap-1 items-center">
           <span className="text-xs text-text-muted mr-1">룬</span>
           {[{field:'runeKeystone',label:'키스톤'},{field:'runeSecondary',label:'보조'}].map(({field}) => (
-            <button key={field} type="button" onClick={() => onOpenRunePicker(field)}
-              className="border border-border rounded-full hover:border-accent transition-colors" style={{ padding: 1 }}>
-              {player[field]
-                ? <img src={`https://ddragon.leagueoflegends.com/cdn/img/${player[field]}`} alt="" width={22} height={22} style={{ borderRadius: '50%' }} />
-                : <div style={{ width: 22, height: 22, background: '#1e2030', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <span className="text-text-muted text-xs">?</span></div>}
-            </button>
+            <ClearableSlot key={field} hasValue={!!player[field]} onClear={() => onChange(field, '')}>
+              <button type="button" onClick={() => onOpenRunePicker(field)}
+                className="border border-border rounded-full hover:border-accent transition-colors" style={{ padding: 1 }}>
+                {player[field]
+                  ? <img src={`https://ddragon.leagueoflegends.com/cdn/img/${player[field]}`} alt="" width={22} height={22} style={{ borderRadius: '50%' }} />
+                  : <div style={{ width: 22, height: 22, background: '#1e2030', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span className="text-text-muted text-xs">?</span></div>}
+              </button>
+            </ClearableSlot>
           ))}
         </div>
         <div className="flex gap-1 items-center">
           <span className="text-xs text-text-muted mr-1">아이템</span>
           {[...['item0','item1','item2','item3','item4','item5','item6'], ...(player.position === 'ADC' ? ['item7'] : [])].map((f, i) => (
-            <button key={f} type="button" onClick={() => onOpenItemPicker(f)}
-              className="border border-border rounded hover:border-accent transition-colors" style={{ padding: 1 }}>
-              {player[f] ? <ItemIcon itemId={player[f]} size={22} />
-                : <div style={{ width: 22, height: 22, background: '#1e2030', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <span className="text-text-muted" style={{ fontSize: 9 }}>{f === 'item7' ? '장' : i < 6 ? i+1 : player.position === 'ADC' ? 7 : '장'}</span></div>}
-            </button>
+            <ClearableSlot key={f} hasValue={!!player[f]} onClear={() => onChange(f, '')}>
+              <button type="button" onClick={() => onOpenItemPicker(f)}
+                className="border border-border rounded hover:border-accent transition-colors" style={{ padding: 1 }}>
+                {player[f] ? <ItemIcon itemId={player[f]} size={22} />
+                  : <div style={{ width: 22, height: 22, background: '#1e2030', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span className="text-text-muted" style={{ fontSize: 9 }}>{f === 'item7' ? '장' : i < 6 ? i+1 : player.position === 'ADC' ? 7 : '장'}</span></div>}
+              </button>
+            </ClearableSlot>
           ))}
         </div>
       </div>
@@ -286,7 +344,8 @@ export default function EditMatchPage() {
 
   const keystones = getAllKeystones(runes);
   const secPaths = getSecondaryPaths(runes);
-  const itemList = Object.entries(items).filter(([, item]) => item.gold?.purchasable && item.maps?.['11']).map(([id, item]) => ({ id, name: item.name }));
+  const itemList    = Object.entries(items).filter(([, item]) => item.gold?.purchasable && item.maps?.['11']).map(([id, item]) => ({ id, name: item.name }));
+  const trinketList = Object.entries(items).filter(([, item]) => item.tags?.includes('Trinket') && item.maps?.['11']).map(([id, item]) => ({ id, name: item.name }));
 
   function openPicker(team, idx, type, field = null) { setPickerTarget({ team, idx, type, field }); }
   function closePicker() { setPickerTarget(null); }
@@ -385,7 +444,9 @@ export default function EditMatchPage() {
       {pickerTarget?.type === 'rune' && (
         <PickerModal title={pickerTarget.field === 'runeKeystone' ? '키스톤 룬 선택' : '보조 경로 선택'}
           items={pickerTarget.field === 'runeKeystone' ? keystones : secPaths}
-          searchKey="name" onSelect={handlePickerSelect} onClose={closePicker}
+          searchKey="name" onClose={closePicker}
+          enableNumberShortcut={pickerTarget.field === 'runeSecondary'}
+          onSelect={(val) => { handlePickerSelect(val); }}
           renderItem={(r) => (
             <button key={r.id} onClick={() => handlePickerSelect(r.icon)}
               className="flex flex-col items-center gap-1 p-1 rounded-lg hover:bg-bg-hover transition-colors group">
@@ -395,7 +456,18 @@ export default function EditMatchPage() {
           )} />
       )}
       {pickerTarget?.type === 'item' && (
-        <PickerModal title="아이템 선택" items={itemList} searchKey="name" onSelect={handlePickerSelect} onClose={closePicker}
+        <PickerModal
+          title={
+            pickerTarget?.field === 'item7' ||
+            (pickerTarget?.field === 'item6' && (pickerTarget.team === 1 ? team1 : team2)?.[pickerTarget.idx]?.position !== 'ADC')
+              ? '장신구 선택' : '아이템 선택'
+          }
+          items={
+            pickerTarget?.field === 'item7' ||
+            (pickerTarget?.field === 'item6' && (pickerTarget.team === 1 ? team1 : team2)?.[pickerTarget.idx]?.position !== 'ADC')
+              ? trinketList : itemList
+          }
+          searchKey="name" onSelect={handlePickerSelect} onClose={closePicker}
           renderItem={(item) => (
             <button key={item.id} onClick={() => handlePickerSelect(item.id)}
               className="flex flex-col items-center gap-1 p-1 rounded-lg hover:bg-bg-hover transition-colors group">
