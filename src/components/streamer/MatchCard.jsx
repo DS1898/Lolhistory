@@ -166,18 +166,20 @@ export default function MatchCard({ participation, allParticipants, streamerId }
           <div style={{ fontSize: '0.7rem', color: '#6b6b7e', marginTop: 2 }}>{relativeDate(match.played_at)}</div>
         </div>
 
-        {/* 챔피언 */}
-        <div style={{ flexShrink: 0, position: 'relative' }}>
-          <ChampionIcon championId={participation.champion_id} size={44} rounded="rounded-lg" />
-          {participation.champion_level && (
-            <span style={{
-              position: 'absolute', bottom: -3, right: -5,
-              background: '#0d0e14', border: '1px solid #2a2b3d',
-              borderRadius: 4, fontSize: 9, fontWeight: 800, color: '#e8e8ea', padding: '0 3px', lineHeight: '14px',
-            }}>{participation.champion_level}</span>
-          )}
+        {/* 챔피언 + 레벨 + 포지션 */}
+        <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+          <div style={{ position: 'relative' }}>
+            <ChampionIcon championId={participation.champion_id} size={44} rounded="rounded-lg" />
+            {participation.champion_level && (
+              <span style={{
+                position: 'absolute', bottom: -3, right: -5,
+                background: '#0d0e14', border: '1px solid #2a2b3d',
+                borderRadius: 4, fontSize: 9, fontWeight: 800, color: '#e8e8ea', padding: '0 3px', lineHeight: '14px',
+              }}>{participation.champion_level}</span>
+            )}
+          </div>
           {participation.position && (
-            <div style={{ fontSize: '0.65rem', color: '#6b6b7e', textAlign: 'center', marginTop: 3 }}>
+            <div style={{ fontSize: '0.65rem', color: '#6b6b7e', textAlign: 'center', lineHeight: 1 }}>
               {POSITION_KO[participation.position] || participation.position}
             </div>
           )}
